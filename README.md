@@ -2,7 +2,7 @@
 
 ## What is Syncro?
 
-Syncro is a full-stack web-based task and project management system designed to help teams plan, organize, and track work effectively. It enables users to manage tasks across multiple projects, assign responsibilities, monitor progress, and collaborate through in-task comments and shared dashboards. The system supports both individual productivity and team coordination, making it suitable for use in software development teams, academic project groups, and business operations. 
+Syncro is a full-stack web-based task and project management system designed to help teams plan, organize, and track work effectively. It enables users to manage tasks across multiple projects, assign responsibilities, monitor progress, and collaborate through in-task comments and shared dashboards. The system supports both individual productivity and team coordination, making it suitable for use in software development teams, academic project groups, and business operations.
 
 Think of it as a simplified version of Trello or Asana - streamlined for efficient team collaboration and project tracking.
 
@@ -20,33 +20,48 @@ Think of it as a simplified version of Trello or Asana - streamlined for efficie
 ## Tech Stack
 
 **Frontend:**
+
 - React with React Router for navigation
 - Axios for API communication
 - Tailwind CSS for styling (optional)
 - Vite for development and build tooling
 
 **Backend:**
+
 - ASP.NET Core Web API
 - Entity Framework Core
 - SQL Server database
 - JWT-based authentication and authorization
+
 ## Setup
+
+- asp.net backend packages:
+
+    | Top-level Package                      | Version |
+    | -------------------------------------- | ------- |
+    | > Microsoft.AspNetCore.OpenApi         | 9.0.6   |
+    | > Microsoft.EntityFrameworkCore.Design | 9.0.6   |
+    | > MySql.EntityFrameworkCore            | 9.0.3   |
+
 - Setup `appsettings.json` on backend folder
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=syncrodb;User=your_username;Password=your_password;Port=3306;"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
+
+    ```json
+    {
+    "ConnectionStrings": {
+        "DefaultConnection": "Server=localhost;Database=syncrodb;User=your_username;Password=your_password;Port=3306;"
+    },
+    "Logging": {
+        "LogLevel": {
+        "Default": "Information",
+        "Microsoft.AspNetCore": "Warning"
+        }
+    },
+    "AllowedHosts": "*"
     }
-  },
-  "AllowedHosts": "*"
-}
-```
+    ```
+
 ## Task
+
 - [ ] setup MySQL connection
 - [ ] setup database schema necessary
 - [ ] setup Role Based Access Control (RBAC)
