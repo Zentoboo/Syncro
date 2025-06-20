@@ -30,7 +30,22 @@ Think of it as a simplified version of Trello or Asana - streamlined for efficie
 - Entity Framework Core
 - SQL Server database
 - JWT-based authentication and authorization
-
+## Setup
+- Setup `appsettings.json` on backend folder
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Database=syncrodb;User=your_username;Password=your_password;Port=3306;"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
+```
 ## Task
 - [ ] setup MySQL connection
 - [ ] setup database schema necessary
