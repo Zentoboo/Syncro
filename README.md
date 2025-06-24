@@ -37,28 +37,39 @@ Think of it as a simplified version of Trello or Asana - streamlined for efficie
 
 - asp.net backend packages:
 
-    | Top-level Package                      | Version |
-    | -------------------------------------- | ------- |
-    | > Microsoft.AspNetCore.OpenApi         | 9.0.6   |
-    | > Microsoft.EntityFrameworkCore.Design | 9.0.6   |
-    | > MySql.EntityFrameworkCore            | 9.0.3   |
+| Package                                         | Version |
+| ----------------------------------------------- | ------- |
+| > BCrypt.Net-Next                               | 4.0.3   |
+| > Microsoft.AspNetCore.Authentication.JwtBearer | 9.0.6   |
+| > Microsoft.AspNetCore.OpenApi                  | 9.0.6   |
+| > Microsoft.EntityFrameworkCore.Tools           | 9.0.6   |
+| > Microsoft.IdentityModel.Tokens                | 8.12.1  |
+| > MySql.EntityFrameworkCore                     | 9.0.3   |
+| > Swashbuckle.AspNetCore                        | 9.0.1   |
+| > System.IdentityModel.Tokens.Jwt               | 8.12.1  |
 
 - Setup `appsettings.json` on backend folder
 
-    ```json
-    {
-    "ConnectionStrings": {
-        "DefaultConnection": "Server=localhost;Database=syncrodb;User=your_username;Password=your_password;Port=3306;"
-    },
-    "Logging": {
-        "LogLevel": {
-        "Default": "Information",
-        "Microsoft.AspNetCore": "Warning"
-        }
-    },
-    "AllowedHosts": "*"
-    }
-    ```
+      ```json
+      {
+
+  "ConnectionStrings": {
+  "DefaultConnection": "Server=localhost;Database=syncrodb;User=root;Password=your-password;Port=3306;"
+  },
+  "Jwt": {
+  "SecretKey": "your-very-long-secret-key-at-least-32-characters-long",
+  "Issuer": "SyncroAPI",
+  "Audience": "SyncroUsers"
+  },
+  "Logging": {
+  "LogLevel": {
+  "Default": "Information",
+  "Microsoft.AspNetCore": "Warning"
+  }
+  },
+  "AllowedHosts": "\*"
+  }
+  ```
 
 ## Task
 

@@ -1,0 +1,6 @@
+@syncroAPI_HostAddress = http://localhost:5095
+
+GET {{syncroAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
