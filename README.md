@@ -50,30 +50,30 @@ Think of it as a simplified version of Trello or Asana - streamlined for efficie
 
 - Setup `appsettings.json` on backend folder
 
-      ```json
-      {
-
-  "ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Database=syncrodb;User=root;Password=your-password;Port=3306;"
-  },
-  "Jwt": {
-  "SecretKey": "your-very-long-secret-key-at-least-32-characters-long",
-  "Issuer": "SyncroAPI",
-  "Audience": "SyncroUsers"
-  },
-  "Logging": {
-  "LogLevel": {
-  "Default": "Information",
-  "Microsoft.AspNetCore": "Warning"
-  }
-  },
-  "AllowedHosts": "\*"
+  ```json
+  {
+    "ConnectionStrings": {
+      "DefaultConnection": "Server=localhost;Database=syncrodb;User=root;Password=your-password;Port=3306;"
+    },
+    "Jwt": {
+      "SecretKey": "your-very-long-secret-key-at-least-32-characters-long",
+      "Issuer": "SyncroAPI",
+      "Audience": "SyncroUsers"
+    },
+    "Logging": {
+      "LogLevel": {
+        "Default": "Information",
+        "Microsoft.AspNetCore": "Warning"
+      }
+    },
+    "AllowedHosts": "*"
   }
   ```
 
 ## Task
 
-- [ ] setup MySQL connection
+- [x] setup MySQL connection
+- [x] successful db, backend, & frontend connection
 - [ ] setup database schema necessary
 - [ ] setup Role Based Access Control (RBAC)
 - [ ] setup simple CRUD

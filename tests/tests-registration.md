@@ -20,3 +20,8 @@ Invoke-RestMethod -Uri "https://localhost:5095/api/auth/register" `
     "password": "password123"
   }'
 ```
+
+# Results:
+1. Swagger: success
+2. React: success
+  - ![console log registration from react](console-log-registrationtest.png)

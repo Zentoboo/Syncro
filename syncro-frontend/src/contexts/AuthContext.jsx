@@ -1,17 +1,11 @@
-// src/contexts/AuthContext.js
+// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-const AuthContext = createContext();
+// Create context
+const AuthContext = createContext(null);
 
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-};
-
+// AuthProvider component
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -20,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     // Configure axios defaults
     useEffect(() => {
         // Update the API base URL to match your backend
-        axios.defaults.baseURL = 'http://localhost:5095';
+        axios.defaults.baseURL = 'http://localhost:5095'; // Change to your API URL
 
         if (token) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -57,14 +51,15 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            console.log('Attempting login with:', { username });
-            console.log('API Base URL:', axios.defaults.baseURL);
+            console.log('🔐 Attempting login with:', { username });
+            console.log('🌐 API Base URL:', axios.defaults.baseURL);
+
             const response = await axios.post('/api/auth/login', {
                 username,
                 password
             });
 
-            console.log('Login response:', response.data);
+            console.log('✅ Login response:', response.data);
 
             const { token: newToken, username: userName, role } = response.data;
 
@@ -81,23 +76,28 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
-            console.error('Login error:', error);
-            console.error('Error response:', error.response?.data);
-            console.error('Error status:', error.response?.status);
+            console.error('❌ Login error:', error);
+            console.error('📄 Error response:', error.response?.data);
+            console.error('🔢 Error status:', error.response?.status);
+
             return {
                 success: false,
-                error: error.response?.data || 'Login failed'
+                error: error.response?.data || error.message || 'Login failed'
             };
         }
     };
 
     const register = async (username, email, password) => {
         try {
+            console.log('📝 Attempting registration with:', { username, email });
+
             const response = await axios.post('/api/auth/register', {
                 username,
                 email,
                 password
             });
+
+            console.log('✅ Registration response:', response.data);
 
             const { token: newToken, username: userName, role } = response.data;
 
@@ -114,9 +114,13 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
+            console.error('❌ Registration error:', error);
+            console.error('📄 Error response:', error.response?.data);
+            console.error('🔢 Error status:', error.response?.status);
+
             return {
                 success: false,
-                error: error.response?.data || 'Registration failed'
+                error: error.response?.data || error.message || 'Registration failed'
             };
         }
     };
@@ -154,3 +158,12 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
+// Custom hook - exported as a separate component
+export function useAuth() {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}

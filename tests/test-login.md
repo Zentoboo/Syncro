@@ -18,3 +18,7 @@ Invoke-RestMethod -Uri "https://localhost:5095/api/auth/login" `
     "password": "password123"
   }'
 ```
+# Results:
+1. Swagger: success
+2. React: success
+  - ![console log login from react](console-log-logintest.png)
