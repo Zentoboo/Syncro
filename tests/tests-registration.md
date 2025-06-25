@@ -22,6 +22,8 @@ Invoke-RestMethod -Uri "https://localhost:5095/api/auth/register" `
 ```
 
 # Results:
-1. Swagger: success
+1. MySQL Swagger: success
 2. React: success
   - ![console log registration from react](console-log-registrationtest.png)
+3. MsSQL Swagger: success
+  - ![swagger log registration test for MsSQL](swagger-log-registrationtest-mssql.png)

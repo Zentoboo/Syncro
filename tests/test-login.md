@@ -19,6 +19,8 @@ Invoke-RestMethod -Uri "https://localhost:5095/api/auth/login" `
   }'
 ```
 # Results:
-1. Swagger: success
+1. MySQL Swagger: success
 2. React: success
   - ![console log login from react](console-log-logintest.png)
+3. MsSQL Swagger: success
+  - ![swagger log login test for MsSQL](swagger-log-logintest-mssql.png)

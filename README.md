@@ -53,7 +53,7 @@ Think of it as a simplified version of Trello or Asana - streamlined for efficie
   ```json
   {
     "ConnectionStrings": {
-      "DefaultConnection": "Server=localhost;Database=syncrodb;User=root;Password=your-password;Port=3306;"
+      "DefaultConnection": "Server=localhost;Database=SyncroAppDB;Trusted_Connection=true;TrustServerCertificate=true;"
     },
     "Jwt": {
       "SecretKey": "your-very-long-secret-key-at-least-32-characters-long",
@@ -78,3 +78,9 @@ Think of it as a simplified version of Trello or Asana - streamlined for efficie
 - [ ] setup Role Based Access Control (RBAC)
 - [ ] setup simple CRUD
 - [ ] setup react-router & axios of application
+
+## Technology considerations
+
+- V0
+- koyeb
+- azure

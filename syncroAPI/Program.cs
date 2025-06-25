@@ -44,9 +44,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Database configuration
+// Database configuration - CHANGED FROM MySQL TO SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection")!));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // JWT Service
 builder.Services.AddScoped<IJwtService, JwtService>();
