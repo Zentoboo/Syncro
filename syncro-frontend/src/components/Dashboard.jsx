@@ -1,30 +1,173 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useRBAC } from '../hooks/useRBAC';
+import { RoleBasedComponent, AdminOnly, ManagerAndAbove, RoleBasedButton } from './RBACComponents';
+import UserManagement from './UserManagement';
 import axios from 'axios';
 
 // --- Helper Components ---
-
-// Simple Plus Icon
 const PlusIcon = () => (
     <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
     </svg>
 );
 
-// Loading Spinner
 const Spinner = ({ size = 'h-5 w-5' }) => (
     <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-blue-500`}></div>
 );
 
+// --- Project Member Management Modal ---
+const ProjectMembersModal = ({ isOpen, onClose, project, onMemberUpdate }) => {
+    const [members, setMembers] = useState([]);
+    const [newMemberUsername, setNewMemberUsername] = useState('');
+    const [newMemberRole, setNewMemberRole] = useState('Contributor');
+    const [loading, setLoading] = useState(false);
+    const { canInviteMembers, canRemoveMembers } = useRBAC();
 
-// --- Modal for Creating a New Project ---
+    const userRoleInProject = project?.members?.find(m => m.user.username === useAuth().user?.username)?.role;
+
+    useEffect(() => {
+        if (project) {
+            setMembers(project.members || []);
+        }
+    }, [project]);
+
+    const addMember = async () => {
+        if (!newMemberUsername.trim()) return;
+        
+        try {
+            setLoading(true);
+            await axios.post(`/api/project/${project.id}/members`, {
+                username: newMemberUsername,
+                role: newMemberRole
+            });
+            
+            // Refresh project data
+            onMemberUpdate();
+            setNewMemberUsername('');
+            alert('Member added successfully');
+        } catch (error) {
+            console.error('Error adding member:', error);
+            alert(error.response?.data || 'Failed to add member');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const removeMember = async (memberId) => {
+        if (!canRemoveMembers(userRoleInProject)) {
+            alert('You do not have permission to remove members');
+            return;
+        }
+
+        try {
+            await axios.delete(`/api/project/${project.id}/members/${memberId}`);
+            onMemberUpdate();
+            alert('Member removed successfully');
+        } catch (error) {
+            console.error('Error removing member:', error);
+            alert('Failed to remove member');
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+            <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl max-h-96 overflow-y-auto">
+                <h2 className="text-2xl font-bold mb-6">Manage Project Members</h2>
+                
+                {/* Add Member Section */}
+                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRoleInProject}>
+                    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 className="text-lg font-medium mb-4">Add New Member</h3>
+                        <div className="flex space-x-4">
+                            <input
+                                type="text"
+                                value={newMemberUsername}
+                                onChange={(e) => setNewMemberUsername(e.target.value)}
+                                placeholder="Username"
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                            />
+                            <select
+                                value={newMemberRole}
+                                onChange={(e) => setNewMemberRole(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                                <option value="Contributor">Contributor</option>
+                                <option value="ProjectManager">Project Manager</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                            <button
+                                onClick={addMember}
+                                disabled={loading}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400"
+                            >
+                                {loading ? <Spinner size="h-4 w-4" /> : 'Add'}
+                            </button>
+                        </div>
+                    </div>
+                </RoleBasedComponent>
+
+                {/* Members List */}
+                <div>
+                    <h3 className="text-lg font-medium mb-4">Current Members</h3>
+                    <div className="space-y-2">
+                        {members.map(member => (
+                            <div key={member.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <span className="font-medium">{member.user.username}</span>
+                                    <span className="ml-2 text-sm text-gray-500">({member.user.email})</span>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                        member.role === 'Admin' ? 'bg-red-100 text-red-800' :
+                                        member.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-green-100 text-green-800'
+                                    }`}>
+                                        {member.role}
+                                    </span>
+                                    <RoleBasedComponent allowedRoles={['Admin']} userRoleInProject={userRoleInProject}>
+                                        <button
+                                            onClick={() => removeMember(member.id)}
+                                            className="text-red-600 hover:text-red-800 text-sm"
+                                        >
+                                            Remove
+                                        </button>
+                                    </RoleBasedComponent>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex justify-end mt-6">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Create Project Modal ---
 const CreateProjectModal = ({ isOpen, onClose, onCreate }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
+    const { canCreateProject } = useRBAC();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!canCreateProject()) {
+            alert('You do not have permission to create projects');
+            return;
+        }
+        
         setLoading(true);
         await onCreate(name, description);
         setLoading(false);
@@ -76,46 +219,17 @@ const CreateProjectModal = ({ isOpen, onClose, onCreate }) => {
     );
 };
 
-// --- Calendar Component ---
-const Calendar = () => {
-    const today = new Date();
-    const monthName = today.toLocaleString('default', { month: 'long' });
-    const year = today.getFullYear();
-
-    return (
-        <div className="bg-white p-6 rounded-lg shadow mt-8">
-            <div className="flex justify-between items-center mb-4">
-                <button className="p-2 rounded-full hover:bg-gray-100">&lt;</button>
-                <h3 className="text-xl font-bold">{`${monthName} ${year}`}</h3>
-                <button className="p-2 rounded-full hover:bg-gray-100">&gt;</button>
-            </div>
-            <div className="grid grid-cols-7 text-center text-sm text-gray-500">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="py-2">{day}</div>)}
-            </div>
-            <div className="grid grid-cols-7 text-center">
-                {/* This is a static representation. A full implementation would calculate days. */}
-                {Array.from({ length: 35 }, (_, i) => {
-                    const day = i - 3; // Placeholder logic to start the month
-                    return (
-                        <div key={i} className={`py-3 border rounded-md m-1 ${day > 0 && day < 32 ? '' : 'text-gray-300'}`}>
-                            {day > 0 && day < 32 ? day : ''}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-
 // --- Main Dashboard Component ---
 const Dashboard = () => {
     const { user, logout } = useAuth();
+    const { canCreateProject, isAdmin, canManageProject } = useRBAC();
     const [projects, setProjects] = useState([]);
     const [selectedProject, setSelectedProject] = useState(null);
     const [projectDashboardData, setProjectDashboardData] = useState(null);
     const [loading, setLoading] = useState({ projects: true, details: false });
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('dashboard');
 
     const fetchProjects = useCallback(async () => {
         setLoading(prev => ({ ...prev, projects: true }));
@@ -155,15 +269,28 @@ const Dashboard = () => {
     const handleCreateProject = async (name, description) => {
         try {
             await axios.post('/api/project', { name, description });
-            await fetchProjects(); // Refresh the project list
+            await fetchProjects();
         } catch (error) {
             console.error("Error creating project:", error);
-            // Here you could set an error state to show a message to the user
+            alert('Failed to create project');
         }
     };
     
     const handleSelectProject = (project) => {
         setSelectedProject(project);
+        setActiveTab('dashboard');
+    };
+
+    const handleMemberUpdate = async () => {
+        await fetchProjects();
+        if (selectedProject) {
+            const updatedProject = projects.find(p => p.id === selectedProject.id);
+            setSelectedProject(updatedProject);
+        }
+    };
+
+    const getUserRoleInProject = (project) => {
+        return project?.userRole || 'Contributor';
     };
 
     const ProjectStatus = ({ data }) => (
@@ -183,58 +310,55 @@ const Dashboard = () => {
         </div>
     );
 
-    const TeamMembers = ({ members }) => (
-        <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-bold mb-4">Team Members</h3>
-            <ul className="space-y-2">
-                {members.map(member => (
-                    <li key={member.user.id} className="flex justify-between items-center text-sm">
-                        <span>{member.user.username}</span>
-                        <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">{member.role}</span>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
-    
-    const MemberContributions = ({ data }) => (
-        <div className="bg-white p-6 rounded-lg shadow mt-8">
-            <h3 className="text-xl font-bold mb-4">Member Contributions</h3>
-            {data && data.tasksByMember.length > 0 ? (
-                <ul className="space-y-4">
-                    {data.tasksByMember.map(member => (
-                        <li key={member.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center">
-                            <div className="mb-2 sm:mb-0">
-                                <p className="font-semibold">{member.user.username}</p>
-                                <p className="text-sm text-gray-500">
-                                    {member.completedTasks} / {member.totalTasks} tasks completed
-                                </p>
-                            </div>
-                            <div className="w-full sm:w-1/3">
-                                 <div className="h-2 bg-gray-200 rounded-full">
-                                    <div className="h-2 bg-green-500 rounded-full" style={{ width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` }}></div>
-                                </div>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p className="text-sm text-gray-500">No task contribution data available for this project.</p>
-            )}
-        </div>
-    );
-
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                             <h1 className="text-2xl font-bold text-gray-900">Syncro Dashboard</h1>
+                        <div className="flex items-center space-x-8">
+                            <h1 className="text-2xl font-bold text-gray-900">Syncro Dashboard</h1>
+                            
+                            {/* Navigation Tabs */}
+                            <nav className="flex space-x-8">
+                                <button
+                                    onClick={() => setActiveTab('dashboard')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                                        activeTab === 'dashboard' 
+                                            ? 'bg-blue-100 text-blue-700' 
+                                            : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    Dashboard
+                                </button>
+                                
+                                <AdminOnly>
+                                    <button
+                                        onClick={() => setActiveTab('users')}
+                                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                                            activeTab === 'users' 
+                                                ? 'bg-blue-100 text-blue-700' 
+                                                : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                    >
+                                        User Management
+                                    </button>
+                                </AdminOnly>
+                            </nav>
                         </div>
+                        
                         <div className="flex items-center space-x-4">
-                            <span className="text-sm text-gray-600">Welcome, {user?.username}</span>
+                            <div className="text-sm">
+                                <span className="text-gray-600">Welcome, </span>
+                                <span className="font-medium">{user?.username}</span>
+                                <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                                    user?.role === 'Admin' ? 'bg-red-100 text-red-800' :
+                                    user?.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-green-100 text-green-800'
+                                }`}>
+                                    {user?.role}
+                                </span>
+                            </div>
                             <button
                                 onClick={logout}
                                 className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-md hover:bg-red-600"
@@ -248,60 +372,240 @@ const Dashboard = () => {
 
             {/* Main Content */}
             <main className="p-4 sm:p-6 lg:p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {activeTab === 'users' ? (
+                    <AdminOnly>
+                        <UserManagement />
+                    </AdminOnly>
+                ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        {/* Left Sidebar */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white p-6 rounded-lg shadow">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold">My Projects</h2>
+                                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']}>
+                                        <button
+                                            onClick={() => setIsCreateModalOpen(true)}
+                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                                            title="Create New Project"
+                                        >
+                                            <PlusIcon />
+                                        </button>
+                                    </RoleBasedComponent>
+                                </div>
+                                
+                                {loading.projects ? (
+                                    <div className="flex justify-center items-center h-32">
+                                        <Spinner />
+                                    </div>
+                                ) : (
+                                    <ul className="space-y-2">
+                                        {projects.map(project => {
+                                            const userRole = getUserRoleInProject(project);
+                                            return (
+                                                <li 
+                                                    key={project.id} 
+                                                    onClick={() => handleSelectProject(project)}
+                                                    className={`p-3 rounded-md cursor-pointer transition-colors ${
+                                                        selectedProject?.id === project.id 
+                                                            ? 'bg-blue-500 text-white' 
+                                                            : 'bg-gray-100 hover:bg-blue-100'
+                                                    }`}
+                                                >
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <div className="font-semibold">{project.name}</div>
+                                                            <div className="text-sm opacity-75">
+                                                                {project.taskCount} tasks
+                                                            </div>
+                                                        </div>
+                                                        <span className={`text-xs px-2 py-1 rounded-full ${
+                                                            selectedProject?.id === project.id 
+                                                                ? 'bg-white/20 text-white' 
+                                                                : userRole === 'Admin' ? 'bg-red-100 text-red-700' :
+                                                                  userRole === 'ProjectManager' ? 'bg-blue-100 text-blue-700' :
+                                                                  'bg-green-100 text-green-700'
+                                                        }`}>
+                                                            {userRole}
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
+                                        {projects.length === 0 && (
+                                            <li className="text-center text-gray-500 py-8">
+                                                No projects found.
+                                                {canCreateProject() && (
+                                                    <button
+                                                        onClick={() => setIsCreateModalOpen(true)}
+                                                        className="block w-full mt-2 text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        Create your first project
+                                                    </button>
+                                                )}
+                                            </li>
+                                        )}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
 
-                    {/* Left Sidebar */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white p-6 rounded-lg shadow">
-                            <h2 className="text-xl font-bold mb-4">Ongoing Projects</h2>
-                            {loading.projects ? (
-                                <div className="flex justify-center items-center h-32"><Spinner /></div>
+                        {/* Right Content Area */}
+                        <div className="lg:col-span-3">
+                            {loading.details ? (
+                                <div className="flex justify-center items-center h-64">
+                                    <Spinner size="h-10 w-10"/>
+                                </div>
+                            ) : selectedProject && projectDashboardData ? (
+                                <div>
+                                    {/* Project Header with Actions */}
+                                    <div className="bg-white p-6 rounded-lg shadow mb-8">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-gray-900">{selectedProject.name}</h2>
+                                                <p className="text-gray-600 mt-1">{selectedProject.description}</p>
+                                            </div>
+                                            <div className="flex space-x-3">
+                                                <RoleBasedComponent 
+                                                    allowedRoles={['Admin', 'ProjectManager']} 
+                                                    userRoleInProject={getUserRoleInProject(selectedProject)}
+                                                >
+                                                    <button
+                                                        onClick={() => setIsMembersModalOpen(true)}
+                                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                                    >
+                                                        Manage Members
+                                                    </button>
+                                                </RoleBasedComponent>
+                                                
+                                                <RoleBasedComponent 
+                                                    allowedRoles={['Admin', 'ProjectManager']} 
+                                                    userRoleInProject={getUserRoleInProject(selectedProject)}
+                                                >
+                                                    <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                                        Add Task
+                                                    </button>
+                                                </RoleBasedComponent>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Project Dashboard Content */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <ProjectStatus data={projectDashboardData} />
+                                        
+                                        <div className="bg-white p-6 rounded-lg shadow">
+                                            <h3 className="text-xl font-bold mb-4">Team Members</h3>
+                                            <div className="space-y-3">
+                                                {projectDashboardData.tasksByMember?.map(member => (
+                                                    <div key={member.user.id} className="flex justify-between items-center">
+                                                        <div>
+                                                            <span className="font-medium">{member.user.username}</span>
+                                                            <div className="text-sm text-gray-500">
+                                                                {member.completedTasks}/{member.totalTasks} tasks
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                                            <div 
+                                                                className="bg-green-600 h-2 rounded-full" 
+                                                                style={{ 
+                                                                    width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` 
+                                                                }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Task Management Section */}
+                                    <div className="mt-8 bg-white p-6 rounded-lg shadow">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-bold">Recent Tasks</h3>
+                                            <RoleBasedComponent 
+                                                allowedRoles={['Admin', 'ProjectManager']} 
+                                                userRoleInProject={getUserRoleInProject(selectedProject)}
+                                            >
+                                                <button className="text-blue-600 hover:text-blue-800 text-sm">
+                                                    View All Tasks
+                                                </button>
+                                            </RoleBasedComponent>
+                                        </div>
+                                        
+                                        <div className="space-y-3">
+                                            {projectDashboardData.recentActivity?.slice(0, 5).map(task => (
+                                                <div key={task.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                    <div>
+                                                        <span className="font-medium">{task.title}</span>
+                                                        <div className="text-sm text-gray-500">
+                                                            Assigned to: {task.assignedTo?.username || 'Unassigned'}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className={`px-2 py-1 text-xs rounded-full ${
+                                                            task.status === 'Done' ? 'bg-green-100 text-green-800' :
+                                                            task.status === 'InProgress' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                            {task.status}
+                                                        </span>
+                                                        <span className={`px-2 py-1 text-xs rounded-full ${
+                                                            task.priority === 'Critical' ? 'bg-red-100 text-red-800' :
+                                                            task.priority === 'High' ? 'bg-orange-100 text-orange-800' :
+                                                            task.priority === 'Medium' ? 'bg-blue-100 text-blue-800' :
+                                                            'bg-gray-100 text-gray-800'
+                                                        }`}>
+                                                            {task.priority}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {(!projectDashboardData.recentActivity || projectDashboardData.recentActivity.length === 0) && (
+                                                <div className="text-center text-gray-500 py-8">
+                                                    No tasks found for this project.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
-                                <ul className="space-y-2">
-                                    {projects.map(project => (
-                                        <li key={project.id} onClick={() => handleSelectProject(project)}
-                                            className={`p-3 rounded-md cursor-pointer transition-colors ${selectedProject?.id === project.id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-blue-100'}`}>
-                                            <div className="font-semibold">{project.name}</div>
-                                            <div className="text-sm">{project.taskCount} tasks</div>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
+                                    <h3 className="text-xl font-semibold">Welcome to your Dashboard</h3>
+                                    <p className="mt-2">
+                                        {projects.length === 0 
+                                            ? "You don't have access to any projects yet." 
+                                            : "Select a project from the left to view its details."
+                                        }
+                                    </p>
+                                    {canCreateProject() && projects.length === 0 && (
+                                        <button
+                                            onClick={() => setIsCreateModalOpen(true)}
+                                            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                        >
+                                            <PlusIcon />
+                                            Create Your First Project
+                                        </button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
-
-                    {/* Right Content Area */}
-                    <div className="lg:col-span-3">
-                        <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-8">
-                            <PlusIcon />
-                            Create New Project
-                        </button>
-                        
-                        {loading.details ? (
-                             <div className="flex justify-center items-center h-64"><Spinner size="h-10 w-10"/></div>
-                        ) : selectedProject && projectDashboardData ? (
-                            <div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <ProjectStatus data={projectDashboardData} />
-                                    <TeamMembers members={projectDashboardData.tasksByMember} />
-                                </div>
-                                 <MemberContributions data={projectDashboardData} />
-                                <Calendar />
-                            </div>
-                        ) : (
-                            <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
-                                <h3 className="text-xl font-semibold">Welcome to your Dashboard</h3>
-                                <p className="mt-2">Select a project from the left to view its details or create a new one to get started.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
+                )}
             </main>
 
+            {/* Modals */}
             <CreateProjectModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
                 onCreate={handleCreateProject}
+            />
+
+            <ProjectMembersModal
+                isOpen={isMembersModalOpen}
+                onClose={() => setIsMembersModalOpen(false)}
+                project={selectedProject}
+                onMemberUpdate={handleMemberUpdate}
             />
         </div>
     );
