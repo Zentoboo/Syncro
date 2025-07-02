@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 // --- Helper Components ---
-
 // Simple Plus Icon
 const PlusIcon = () => (
     <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,6 +111,7 @@ const Calendar = () => {
 // --- Main Dashboard Component ---
 const Dashboard = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [projects, setProjects] = useState([]);
     const [selectedProject, setSelectedProject] = useState(null);
     const [projectDashboardData, setProjectDashboardData] = useState(null);
@@ -165,6 +166,10 @@ const Dashboard = () => {
     const handleSelectProject = (project) => {
         setSelectedProject(project);
     };
+
+    const handleNavigateToTasks = () => {
+        navigate(`/project/${selectedProject.id}/tasks`);
+    }
 
     const ProjectStatus = ({ data }) => (
         <div className="bg-white p-6 rounded-lg shadow">
@@ -246,6 +251,7 @@ const Dashboard = () => {
                 </div>
             </header>
 
+
             {/* Main Content */}
             <main className="p-4 sm:p-6 lg:p-8">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -272,10 +278,18 @@ const Dashboard = () => {
 
                     {/* Right Content Area */}
                     <div className="lg:col-span-3">
-                        <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-8">
-                            <PlusIcon />
-                            Create New Project
-                        </button>
+                        <div className="flex space-x-4 mb-8">
+                            <button onClick={() => setIsModalOpen(true)} className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <PlusIcon />
+                                Create New Project
+                            </button>
+                            <button 
+                                onClick={handleNavigateToTasks} 
+                                disabled={!selectedProject}
+                                className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                Manage Tasks
+                            </button>
+                        </div>
                         
                         {loading.details ? (
                              <div className="flex justify-center items-center h-64"><Spinner size="h-10 w-10"/></div>
