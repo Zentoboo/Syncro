@@ -1,0 +1,242 @@
+// src/components/tasks-application.jsx
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+
+// --- Helper Components ---
+const Spinner = ({ size = 'h-5 w-5' }) => (
+    <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-blue-500`}></div>
+);
+
+const PlusIcon = () => (
+    <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+);
+
+const priorityStyles = {
+    0: { text: 'Low', bg: 'bg-gray-200', text_color: 'text-gray-800' },
+    1: { text: 'Medium', bg: 'bg-blue-200', text_color: 'text-blue-800' },
+    2: { text: 'High', bg: 'bg-yellow-200', text_color: 'text-yellow-800' },
+    3: { text: 'Critical', bg: 'bg-red-200', text_color: 'text-red-800' }
+};
+
+// --- Task Creation/Edit Modal ---
+const TaskModal = ({ isOpen, onClose, onSave, projectMembers, existingTask = null }) => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [assignedToUserId, setAssignedToUserId] = useState('');
+    const [dueDate, setDueDate] = useState('');
+    const [priority, setPriority] = useState(1); // Default to Medium
+    const [status, setStatus] = useState(0); // Default to ToDo
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (existingTask) {
+            setTitle(existingTask.title);
+            setDescription(existingTask.description);
+            setAssignedToUserId(existingTask.assignedTo?.id || '');
+            setDueDate(existingTask.dueDate ? existingTask.dueDate.split('T')[0] : '');
+            setPriority(existingTask.priority);
+            setStatus(existingTask.status);
+        } else {
+            // Reset form for new task
+            setTitle('');
+            setDescription('');
+            setAssignedToUserId('');
+            setDueDate('');
+            setPriority(1);
+            setStatus(0);
+        }
+    }, [existingTask, isOpen]);
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        const taskData = {
+            title,
+            description,
+            assignedToUserId: assignedToUserId ? parseInt(assignedToUserId, 10) : null,
+            dueDate: dueDate || null,
+            priority,
+            status
+        };
+        await onSave(taskData);
+        setLoading(false);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+                <h2 className="text-xl font-bold mb-4">{existingTask ? 'Edit Task' : 'Create New Task'}</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <input type="text" placeholder="Task Title" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-2 border rounded" />
+                    <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} className="w-full p-2 border rounded" rows="3"></textarea>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <select value={assignedToUserId} onChange={e => setAssignedToUserId(e.target.value)} className="w-full p-2 border rounded">
+                            <option value="">Assign to...</option>
+                            {projectMembers.map(member => <option key={member.user.id} value={member.user.id}>{member.user.username}</option>)}
+                        </select>
+                        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full p-2 border rounded" />
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <select value={priority} onChange={e => setPriority(parseInt(e.target.value, 10))} className="w-full p-2 border rounded">
+                            <option value="0">Low</option>
+                            <option value="1">Medium</option>
+                            <option value="2">High</option>
+                            <option value="3">Critical</option>
+                        </select>
+                        {existingTask && (
+                             <select value={status} onChange={e => setStatus(parseInt(e.target.value, 10))} className="w-full p-2 border rounded">
+                                <option value="0">To Do</option>
+                                <option value="1">In Progress</option>
+                                <option value="2">Done</option>
+                            </select>
+                        )}
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-blue-400">
+                            {loading ? 'Saving...' : 'Save Task'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// --- Task Card ---
+const TaskCard = ({ task, onEdit }) => (
+    <div className="bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-3 cursor-pointer" onClick={() => onEdit(task)}>
+        <h4 className="font-semibold text-sm">{task.title}</h4>
+        <div className="flex justify-between items-center mt-2 text-xs">
+            <span className={`px-2 py-1 rounded-full ${priorityStyles[task.priority].bg} ${priorityStyles[task.priority].text_color}`}>
+                {priorityStyles[task.priority].text}
+            </span>
+            <span>{task.assignedTo?.username || 'Unassigned'}</span>
+        </div>
+    </div>
+);
+
+
+// --- Main Tasks Application Component ---
+const TasksApplication = () => {
+    const { projectId } = useParams();
+    const [project, setProject] = useState(null);
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const [projectRes, tasksRes] = await Promise.all([
+                axios.get(`/api/project/${projectId}`),
+                axios.get(`/api/task?projectId=${projectId}`)
+            ]);
+            setProject(projectRes.data);
+            setTasks(tasksRes.data);
+        } catch (err) {
+            setError('Failed to fetch project data. You may not have access to this project.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [projectId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleSaveTask = async (taskData) => {
+        try {
+            if (editingTask) {
+                // Update existing task
+                const updateData = { ...taskData, title: taskData.title, description: taskData.description };
+                await axios.put(`/api/task/${editingTask.id}`, updateData);
+            } else {
+                // Create new task
+                const createData = { ...taskData, projectId: parseInt(projectId, 10) };
+                await axios.post('/api/task', createData);
+            }
+            fetchData(); // Refresh data
+        } catch (err) {
+            console.error("Error saving task:", err);
+            setError("Failed to save the task.");
+        }
+    };
+    
+    const handleOpenModal = (task = null) => {
+        setEditingTask(task);
+        setIsModalOpen(true);
+    };
+
+    if (loading) return <div className="p-8 flex justify-center items-center h-screen"><Spinner size="h-12 w-12" /></div>;
+    if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+    if (!project) return <div className="p-8 text-center">Project not found.</div>;
+
+    const taskColumns = {
+        todo: tasks.filter(t => t.status === 0),
+        inProgress: tasks.filter(t => t.status === 1),
+        done: tasks.filter(t => t.status === 2),
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100">
+            <header className="bg-white shadow-sm p-4">
+                <div className="max-w-7xl mx-auto flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold">{project.name}</h1>
+                        <p className="text-sm text-gray-600">{project.description}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                         <button onClick={() => handleOpenModal()} className="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            <PlusIcon /> Add New Task
+                        </button>
+                        <Link to="/dashboard" className="text-sm text-blue-600 hover:underline">Back to Dashboard</Link>
+                    </div>
+                </div>
+            </header>
+
+            <main className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* To Do Column */}
+                    <div className="bg-gray-200 p-4 rounded-lg">
+                        <h3 className="font-bold mb-4">To Do ({taskColumns.todo.length})</h3>
+                        <div>{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} onEdit={handleOpenModal} />)}</div>
+                    </div>
+                    {/* In Progress Column */}
+                    <div className="bg-gray-200 p-4 rounded-lg">
+                        <h3 className="font-bold mb-4">In Progress ({taskColumns.inProgress.length})</h3>
+                        <div>{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} onEdit={handleOpenModal} />)}</div>
+                    </div>
+                    {/* Done Column */}
+                    <div className="bg-gray-200 p-4 rounded-lg">
+                        <h3 className="font-bold mb-4">Done ({taskColumns.done.length})</h3>
+                        <div>{taskColumns.done.map(task => <TaskCard key={task.id} task={task} onEdit={handleOpenModal} />)}</div>
+                    </div>
+                </div>
+            </main>
+
+            <TaskModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSaveTask}
+                projectMembers={project.members}
+                existingTask={editingTask}
+            />
+        </div>
+    );
+};
+
+export default TasksApplication;

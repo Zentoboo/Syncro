@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
+import TasksApplication from './components/tasks-application';
 
 const Unauthorized = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -116,6 +117,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Project Manager Tasks Management Route */}
+            <Route
+              path="/project/:projectId/tasks"
+              element={
+                <ProtectedRoute>
+                  <TasksApplication />
                 </ProtectedRoute>
               }
             />
