@@ -26,10 +26,12 @@ namespace syncroAPI.Controllers
             return int.Parse(userIdClaim ?? "0");
         }
 
-        private async Task<bool> HasProjectAccess(int projectId, int userId)
+        private async Task<(bool hasAccess, string role)> HasProjectAccess(int projectId, int userId)
         {
-            return await _context.ProjectMembers
-                .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == userId && pm.IsActive);
+            var membership = await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == userId && pm.IsActive);
+            
+            return (membership != null, membership?.Role ?? "");
         }
 
         [HttpGet]
@@ -104,7 +106,8 @@ namespace syncroAPI.Controllers
                 return NotFound("Task not found");
 
             // Check project access
-            if (!await HasProjectAccess(task.ProjectId, userId))
+            var (hasAccess, _) = await HasProjectAccess(task.ProjectId, userId);
+            if (!hasAccess)
                 return Forbid("You don't have access to this project");
 
             var response = new TaskResponse
@@ -195,14 +198,19 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
-            // Check project access
-            if (!await HasProjectAccess(request.ProjectId, userId))
-                return Forbid("You don't have access to this project");
+            // Check project access and role
+            var (hasAccess, userRole) = await HasProjectAccess(request.ProjectId, userId);
+            if (!hasAccess)
+                return Forbid("You don't have access to this project.");
+
+            // *** NEW: Only Admin or ProjectManager can create tasks ***
+            if (userRole != "Admin" && userRole != "ProjectManager")
+                return Forbid("You don't have permission to create tasks in this project.");
 
             // Validate assigned user is a project member
             if (request.AssignedToUserId.HasValue)
             {
-                var assignedUserAccess = await HasProjectAccess(request.ProjectId, request.AssignedToUserId.Value);
+                var (assignedUserAccess, _) = await HasProjectAccess(request.ProjectId, request.AssignedToUserId.Value);
                 if (!assignedUserAccess)
                     return BadRequest("Assigned user is not a member of this project");
             }
@@ -226,13 +234,16 @@ namespace syncroAPI.Controllers
                 AssignedToUserId = request.AssignedToUserId,
                 ParentTaskId = request.ParentTaskId,
                 Priority = request.Priority,
-                DueDate = request.DueDate
+                DueDate = request.DueDate,
+                Status = Models.TaskStatus.ToDo // Always start as ToDo
             };
 
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
-            return await GetTask(task.Id);
+            // You might need to adjust GetTask to return the full response DTO
+            var createdTask = await _context.Tasks.FindAsync(task.Id);
+            return Ok(createdTask); 
         }
 
         [HttpPut("{id}")]
@@ -247,29 +258,65 @@ namespace syncroAPI.Controllers
             if (task == null)
                 return NotFound("Task not found");
 
-            // Check project access
-            if (!await HasProjectAccess(task.ProjectId, userId))
+            var (hasAccess, userRole) = await HasProjectAccess(task.ProjectId, userId);
+            if (!hasAccess)
                 return Forbid("You don't have access to this project");
+
+            // *** NEW: Workflow Logic for Status Changes ***
+            var oldStatus = task.Status;
+            var newStatus = request.Status;
+
+            if (oldStatus != newStatus)
+            {
+                bool isManager = userRole == "Admin" || userRole == "ProjectManager";
+                bool isAssignedUser = task.AssignedToUserId == userId;
+
+                // Contributor: ToDo -> InProgress
+                if (oldStatus == Models.TaskStatus.ToDo && newStatus == Models.TaskStatus.InProgress && isAssignedUser)
+                {
+                    task.Status = newStatus;
+                }
+                // Contributor: InProgress -> InReview
+                else if (oldStatus == Models.TaskStatus.InProgress && newStatus == Models.TaskStatus.InReview && isAssignedUser)
+                {
+                    task.Status = newStatus;
+                }
+                // Manager: InReview -> Done (Approve)
+                else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.Done && isManager)
+                {
+                    task.Status = newStatus;
+                }
+                // Manager: InReview -> InProgress (Reject)
+                else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.InProgress && isManager)
+                {
+                    task.Status = newStatus;
+                }
+                else if (oldStatus != newStatus) // If any other status change is attempted
+                {
+                    return Forbid("You do not have permission to make this status change.");
+                }
+            }
 
             // Validate assigned user is a project member
             if (request.AssignedToUserId.HasValue)
             {
-                var assignedUserAccess = await HasProjectAccess(task.ProjectId, request.AssignedToUserId.Value);
+                var (assignedUserAccess, _) = await HasProjectAccess(task.ProjectId, request.AssignedToUserId.Value);
                 if (!assignedUserAccess)
                     return BadRequest("Assigned user is not a member of this project");
             }
-
+            
+            // Update other details
             task.Title = request.Title;
             task.Description = request.Description;
             task.AssignedToUserId = request.AssignedToUserId;
-            task.Status = request.Status;
             task.Priority = request.Priority;
             task.DueDate = request.DueDate;
             task.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-
-            return await GetTask(task.Id);
+            
+            var updatedTask = await _context.Tasks.FindAsync(task.Id);
+            return Ok(updatedTask);
         }
 
         [HttpDelete("{id}")]
@@ -277,23 +324,18 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
-            var task = await _context.Tasks
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id);
+            var task = await _context.Tasks.FindAsync(id);
 
             if (task == null)
                 return NotFound("Task not found");
 
-            // Check project access
-            if (!await HasProjectAccess(task.ProjectId, userId))
+            var (hasAccess, userRole) = await HasProjectAccess(task.ProjectId, userId);
+            if (!hasAccess)
                 return Forbid("You don't have access to this project");
 
-            // Only task creator or project admin can delete
-            var userMembership = await _context.ProjectMembers
-                .FirstOrDefaultAsync(pm => pm.ProjectId == task.ProjectId && pm.UserId == userId && pm.IsActive);
-
-            if (task.CreatedByUserId != userId && userMembership?.Role != "Admin")
-                return Forbid("You don't have permission to delete this task");
+            // *** NEW: Only Admin or ProjectManager can delete tasks ***
+            if (userRole != "Admin" && userRole != "ProjectManager")
+                return Forbid("You don't have permission to delete this task.");
 
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
@@ -314,7 +356,8 @@ namespace syncroAPI.Controllers
                 return NotFound("Task not found");
 
             // Check project access
-            if (!await HasProjectAccess(task.ProjectId, userId))
+            var (hasAccess, _) = await HasProjectAccess(task.ProjectId, userId);
+            if (!hasAccess)
                 return Forbid("You don't have access to this project");
 
             var comment = new TaskComment

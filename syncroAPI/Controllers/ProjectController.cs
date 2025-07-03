@@ -25,7 +25,7 @@ namespace syncroAPI.Controllers
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.Parse(userIdClaim ?? "0");
         }
-
+        
         private string GetCurrentUserRole()
         {
             return User.FindFirst(ClaimTypes.Role)?.Value ?? "";
@@ -62,12 +62,11 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
-            // Check if user is a member of the project
             var membership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
 
             if (membership == null)
-                return Forbid("You are not a member of this project");
+                return Forbid();
 
             var project = await _context.Projects
                 .Include(p => p.CreatedBy)
@@ -119,7 +118,7 @@ namespace syncroAPI.Controllers
         public async Task<ActionResult<ProjectResponse>> CreateProject([FromBody] CreateProjectRequest request)
         {
             var userId = GetCurrentUserId();
-            var userRole = GetCurrentUserRole(); // Get the user's global role
+            var userRole = GetCurrentUserRole();
 
             var project = new Project
             {
@@ -137,13 +136,12 @@ namespace syncroAPI.Controllers
             {
                 ProjectId = project.Id,
                 UserId = userId,
-                Role = userRole // Use the user's actual role
+                Role = userRole
             };
 
             _context.ProjectMembers.Add(membership);
             await _context.SaveChangesAsync();
 
-            // Reload with includes for response
             var createdProject = await _context.Projects
                 .Include(p => p.CreatedBy)
                 .Include(p => p.ProjectMembers.Where(pm => pm.IsActive))
@@ -191,12 +189,11 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
-            // Check if user has admin or project manager role
             var membership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
 
             if (membership == null || (membership.Role != "Admin" && membership.Role != "ProjectManager"))
-                return Forbid("You don't have permission to update this project");
+                return Forbid();
 
             var project = await _context.Projects
                 .Include(p => p.CreatedBy)
@@ -258,21 +255,20 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
-            // Check if user has admin role
             var membership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
 
-            if (membership == null || membership.Role != "Admin")
-                return Forbid("Only admins can add members to projects");
+            // *** THIS IS THE FIX ***
+            // Allow both Admin and ProjectManager to add members
+            if (membership == null || (membership.Role != "Admin" && membership.Role != "ProjectManager"))
+                return Forbid();
 
-            // Find the user to add
             var userToAdd = await _context.Users
                 .FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
 
             if (userToAdd == null)
                 return BadRequest("User not found");
 
-            // Check if user is already a member
             var existingMembership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userToAdd.Id);
 
@@ -281,14 +277,12 @@ namespace syncroAPI.Controllers
                 if (existingMembership.IsActive)
                     return BadRequest("User is already a member of this project");
 
-                // Reactivate membership
                 existingMembership.IsActive = true;
                 existingMembership.Role = request.Role;
                 existingMembership.JoinedAt = DateTime.UtcNow;
             }
             else
             {
-                // Create new membership
                 existingMembership = new ProjectMember
                 {
                     ProjectId = id,
@@ -322,12 +316,11 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
-            // Check if user has admin role
             var userMembership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
 
             if (userMembership == null || userMembership.Role != "Admin")
-                return Forbid("Only admins can remove members from projects");
+                return Forbid();
 
             var memberToRemove = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.Id == memberId && pm.ProjectId == id);
@@ -335,7 +328,6 @@ namespace syncroAPI.Controllers
             if (memberToRemove == null)
                 return NotFound("Member not found");
 
-            // Don't allow removing the project creator
             var project = await _context.Projects.FindAsync(id);
             if (project != null && memberToRemove.UserId == project.CreatedByUserId)
                 return BadRequest("Cannot remove project creator");
@@ -357,9 +349,8 @@ namespace syncroAPI.Controllers
             if (project == null)
                 return NotFound("Project not found");
 
-            // Only project creator can delete the project
             if (project.CreatedByUserId != userId)
-                return Forbid("Only the project creator can delete the project");
+                return Forbid();
 
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();

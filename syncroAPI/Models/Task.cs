@@ -6,7 +6,8 @@ namespace syncroAPI.Models
     {
         ToDo = 0,
         InProgress = 1,
-        Done = 2
+        InReview = 2,
+        Done = 3
     }
 
     public enum TaskPriority
