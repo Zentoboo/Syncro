@@ -26,6 +26,11 @@ namespace syncroAPI.Controllers
             return int.Parse(userIdClaim ?? "0");
         }
 
+        private string GetCurrentUserRole()
+        {
+            return User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+        }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectSummaryResponse>>> GetProjects()
         {
@@ -114,6 +119,7 @@ namespace syncroAPI.Controllers
         public async Task<ActionResult<ProjectResponse>> CreateProject([FromBody] CreateProjectRequest request)
         {
             var userId = GetCurrentUserId();
+            var userRole = GetCurrentUserRole(); // Get the user's global role
 
             var project = new Project
             {
@@ -127,12 +133,11 @@ namespace syncroAPI.Controllers
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            // Add creator as an admin member
             var membership = new ProjectMember
             {
                 ProjectId = project.Id,
                 UserId = userId,
-                Role = "Admin"
+                Role = userRole // Use the user's actual role
             };
 
             _context.ProjectMembers.Add(membership);
