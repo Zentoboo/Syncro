@@ -69,6 +69,10 @@ export const useRBAC = () => {
         // Only admins can change user roles
         return isAdmin();
     };
+    const canDeleteUser = (targetUserRole) => {
+        // Only admins can delete user 
+        return isAdmin();
+    };
 
     return {
         user,
@@ -86,6 +90,7 @@ export const useRBAC = () => {
         canDeleteTasks,
         canViewProject,
         canPromoteUser,
+        canDeleteUser,
         getMaxRole
     };
 };

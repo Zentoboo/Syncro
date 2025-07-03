@@ -8,7 +8,7 @@ const UserManagement = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState({});
-    const { canPromoteUser } = useRBAC();
+    const { canPromoteUser, canDeleteUser } = useRBAC();
 
     useEffect(() => {
         fetchUsers();
@@ -50,6 +50,30 @@ const UserManagement = () => {
             alert('Failed to update user role');
         } finally {
             setUpdating(prev => ({ ...prev, [userId]: false }));
+        }
+    };
+    const deleteUser = async (userId) => {
+        if (!canDeleteUser()) { // Check if the current user has permission to delete
+            alert('You do not have permission to delete users');
+            return;
+        }
+
+        if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            try {
+                setUpdating(prev => ({ ...prev, [userId]: true }));
+                // You'll need to create this endpoint in your backend (e.g., DELETE /api/admin/users/:userId)
+                await axios.delete(`/api/admin/users/${userId}`);
+
+                // Remove the user from the local state
+                setUsers(prev => prev.filter(user => user.id !== userId));
+
+                alert('User deleted successfully');
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Failed to delete user');
+            } finally {
+                setUpdating(prev => ({ ...prev, [userId]: false }));
+            }
         }
     };
 
@@ -149,6 +173,14 @@ const UserManagement = () => {
                                                         Make Contributor
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => deleteUser(user.id)}
+                                                    disabled={updating[user.id]}
+                                                    className="text-gray-500 hover:text-black disabled:opacity-50"
+                                                >
+                                                    Delete
+                                                </button>
+
                                                 {updating[user.id] && (
                                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
                                                 )}
