@@ -284,6 +284,13 @@ const Dashboard = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                             <span className="text-sm text-gray-600">Welcome, {user?.username}</span>
+                            <span className={`font-medium px-2 py-1 rounded-full text-xs ${
+                                user?.role === 'Admin' ? 'bg-red-100 text-red-800' :
+                                user?.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
+                                'bg-green-100 text-green-800'
+                            }`}>
+                                {user?.role}
+                            </span>
                             <button onClick={logout} className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-md hover:bg-red-600">
                                 Logout
                             </button>
@@ -303,11 +310,6 @@ const Dashboard = () => {
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold">My Projects</h2>
-                                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager', 'Contributor']} userRoleInProject={user?.role}>
-                                        <button onClick={() => setIsCreateModalOpen(true)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md" title="Create New Project">
-                                            <PlusIcon />
-                                        </button>
-                                    </RoleBasedComponent>
                                 </div>
                                 {loading.projects ? (
                                     <div className="flex justify-center items-center h-32"><Spinner /></div>
@@ -329,6 +331,35 @@ const Dashboard = () => {
 
                         {/* Right Content Area */}
                         <div className="lg:col-span-3">
+                            <div className="mb-6 flex flex-wrap gap-4 items-center">
+                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={user?.role}>
+                                    <button
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        <PlusIcon /> New Project
+                                    </button>
+                                </RoleBasedComponent>
+
+                                <button
+                                    onClick={handleNavigateToTasks}
+                                    disabled={!selectedProject}
+                                    className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                >
+                                    Manage Tasks
+                                </button>
+
+                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={getUserRoleInProject(selectedProject)}>
+                                    <button
+                                        onClick={() => setIsMembersModalOpen(true)}
+                                        disabled={!selectedProject}
+                                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                        Manage Members
+                                    </button>
+                                </RoleBasedComponent>
+                            </div>
+                            
                             {loading.details ? (
                                 <div className="flex justify-center items-center h-64"><Spinner size="h-10 w-10" /></div>
                             ) : selectedProject && projectDashboardData ? (
@@ -338,12 +369,6 @@ const Dashboard = () => {
                                             <div>
                                                 <h2 className="text-2xl font-bold">{selectedProject.name}</h2>
                                                 <p className="text-gray-600 mt-1">{selectedProject.description}</p>
-                                            </div>
-                                            <div className="flex space-x-3">
-                                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager', 'Contributor']} userRoleInProject={getUserRoleInProject(selectedProject)}>
-                                                    <button onClick={() => setIsMembersModalOpen(true)} className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700">Manage Members</button>
-                                                    <button onClick={handleNavigateToTasks} className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">Manage Tasks</button>
-                                                </RoleBasedComponent>
                                             </div>
                                         </div>
                                     </div>
