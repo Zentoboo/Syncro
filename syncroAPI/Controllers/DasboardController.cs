@@ -51,6 +51,7 @@ namespace syncroAPI.Controllers
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    Description = t.Description,
                     Status = t.Status,
                     Priority = t.Priority,
                     DueDate = t.DueDate,
@@ -161,6 +162,7 @@ namespace syncroAPI.Controllers
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    Description = t.Description,
                     Status = t.Status,
                     Priority = t.Priority,
                     DueDate = t.DueDate,

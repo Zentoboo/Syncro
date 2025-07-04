@@ -64,6 +64,7 @@ namespace syncroAPI.Controllers
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    Description = t.Description,
                     Status = t.Status,
                     Priority = t.Priority,
                     DueDate = t.DueDate,
@@ -241,9 +242,7 @@ namespace syncroAPI.Controllers
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
-            // You might need to adjust GetTask to return the full response DTO
-            var createdTask = await _context.Tasks.FindAsync(task.Id);
-            return Ok(createdTask); 
+            return await GetTask(task.Id);
         }
 
         [HttpPut("{id}")]
@@ -314,9 +313,7 @@ namespace syncroAPI.Controllers
             task.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            
-            var updatedTask = await _context.Tasks.FindAsync(task.Id);
-            return Ok(updatedTask);
+            return await GetTask(id);
         }
 
         [HttpDelete("{id}")]
@@ -404,6 +401,7 @@ namespace syncroAPI.Controllers
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    Description = t.Description,
                     Status = t.Status,
                     Priority = t.Priority,
                     DueDate = t.DueDate,

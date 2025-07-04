@@ -96,7 +96,7 @@ const TaskModal = ({ isOpen, onClose, onSave, projectMembers, existingTask = nul
                         </select>
                         <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full p-2 border rounded" />
                     </div>
-                     <div className="grid grid-cols-1">
+                    <div className="grid grid-cols-1">
                         <select value={priority} onChange={e => setPriority(parseInt(e.target.value, 10))} className="w-full p-2 border rounded">
                             <option value="0">Low</option>
                             <option value="1">Medium</option>
@@ -118,7 +118,7 @@ const TaskModal = ({ isOpen, onClose, onSave, projectMembers, existingTask = nul
 
 // --- Task Card ---
 const TaskCard = ({ task, userRole, onEdit, onUpdateStatus, onDelete }) => {
-    
+
     const renderActions = () => {
         const isManager = userRole === 'Admin' || userRole === 'ProjectManager';
 
@@ -147,7 +147,7 @@ const TaskCard = ({ task, userRole, onEdit, onUpdateStatus, onDelete }) => {
             <div className="flex justify-between items-start cursor-pointer" onClick={() => onEdit(task)}>
                 <h4 className="font-semibold text-sm">{task.title}</h4>
                 <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRole}>
-                     <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
                 </RoleBasedComponent>
             </div>
             <div className="flex justify-between items-center mt-2 text-xs">
@@ -200,10 +200,17 @@ const TasksApplication = () => {
     const handleSaveTask = async (taskData, taskId) => {
         try {
             if (taskId) {
-                // Update existing task details (not status)
-                await axios.put(`/api/task/${taskId}`, { ...editingTask, ...taskData });
+                const updatePayload = {
+                    title: taskData.title,
+                    description: taskData.description,
+                    assignedToUserId: taskData.assignedToUserId,
+                    status: editingTask.status, // Preserve the existing status
+                    priority: taskData.priority,
+                    dueDate: taskData.dueDate,
+                };
+                await axios.put(`/api/task/${taskId}`, updatePayload);
             } else {
-                // Create new task
+                // Create a new task
                 await axios.post('/api/task', { ...taskData, projectId: parseInt(projectId, 10) });
             }
             fetchData(); // Refresh data
@@ -212,11 +219,26 @@ const TasksApplication = () => {
             setError(err.response?.data?.message || "Failed to save the task.");
         }
     };
-    
+
     const handleUpdateTaskStatus = async (taskId, newStatus) => {
+        const taskToUpdate = tasks.find(t => t.id === taskId);
+        if (!taskToUpdate) {
+            setError("Task not found");
+            return;
+        }
+
+        // Construct a payload that matches the backend's UpdateTaskRequest DTO
+        const updatePayload = {
+            title: taskToUpdate.title,
+            description: taskToUpdate.description,
+            assignedToUserId: taskToUpdate.assignedTo ? taskToUpdate.assignedTo.id : null,
+            status: newStatus,
+            priority: taskToUpdate.priority,
+            dueDate: taskToUpdate.dueDate,
+        };
+
         try {
-            // NOTE: This assumes a new backend endpoint exists for status updates
-            await axios.put(`/api/task/${taskId}`, { ...tasks.find(t => t.id === taskId), status: newStatus });
+            await axios.put(`/api/task/${taskId}`, updatePayload);
             fetchData();
         } catch (err) {
             console.error("Error updating task status:", err);
@@ -261,11 +283,11 @@ const TasksApplication = () => {
                         <p className="text-sm text-gray-600">{project.description}</p>
                     </div>
                     <div className="flex items-center space-x-4">
-                         <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRoleInProject}>
+                        <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRoleInProject}>
                             <button onClick={() => handleOpenModal()} className="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                                 <PlusIcon /> Add New Task
                             </button>
-                         </RoleBasedComponent>
+                        </RoleBasedComponent>
                         <Link to="/dashboard" className="text-sm text-blue-600 hover:underline">Back to Dashboard</Link>
                     </div>
                 </div>
@@ -296,8 +318,8 @@ const TasksApplication = () => {
                 </div>
             </main>
 
-            <TaskModal 
-                isOpen={isModalOpen} 
+            <TaskModal
+                isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleSaveTask}
                 projectMembers={project.members}
