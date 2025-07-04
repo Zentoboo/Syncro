@@ -44,6 +44,7 @@ namespace syncroAPI.Controllers
 
             return Ok(new AuthResponse
             {
+                UserId = user.Id, 
                 Token = token,
                 Username = user.Username,
                 Role = user.Role,
@@ -66,6 +67,7 @@ namespace syncroAPI.Controllers
 
             return Ok(new AuthResponse
             {
+                UserId = user.Id,
                 Token = token,
                 Username = user.Username,
                 Role = user.Role,

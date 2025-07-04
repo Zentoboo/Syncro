@@ -117,17 +117,28 @@ const TaskModal = ({ isOpen, onClose, onSave, projectMembers, existingTask = nul
 };
 
 // --- Task Card ---
-const TaskCard = ({ task, userRole, onEdit, onUpdateStatus, onDelete }) => {
-
+const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete }) => {
+    
     const renderActions = () => {
         const isManager = userRole === 'Admin' || userRole === 'ProjectManager';
+        // Check if the currently logged-in user is the one assigned to the task
+        const isAssignedToMe = user && task.assignedTo?.id === user.id;
 
         switch (task.status) {
             case 0: // ToDo
-                return <button onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, 1); }} className="w-full mt-2 px-3 py-1 text-xs text-white bg-blue-500 rounded hover:bg-blue-600">Start Task</button>;
+                // Only show "Start Task" if the task is assigned to the current user
+                if (isAssignedToMe) {
+                    return <button onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, 1); }} className="w-full mt-2 px-3 py-1 text-xs text-white bg-blue-500 rounded hover:bg-blue-600">Start Task</button>;
+                }
+                return null;
             case 1: // In Progress
-                return <button onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, 2); }} className="w-full mt-2 px-3 py-1 text-xs text-white bg-purple-500 rounded hover:bg-purple-600">Submit for Review</button>;
+                // Only show "Submit for Review" if the task is assigned to the current user
+                if (isAssignedToMe) {
+                    return <button onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, 2); }} className="w-full mt-2 px-3 py-1 text-xs text-white bg-purple-500 rounded hover:bg-purple-600">Submit for Review</button>;
+                }
+                return null;
             case 2: // In Review
+                // Only show "Reject" and "Approve" to managers
                 if (isManager) {
                     return (
                         <div className="flex space-x-2 mt-2">
@@ -147,9 +158,10 @@ const TaskCard = ({ task, userRole, onEdit, onUpdateStatus, onDelete }) => {
             <div className="flex justify-between items-start cursor-pointer" onClick={() => onEdit(task)}>
                 <h4 className="font-semibold text-sm">{task.title}</h4>
                 <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRole}>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
+                     <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
                 </RoleBasedComponent>
             </div>
+            {task.description && <p className="text-xs text-gray-600 mt-2">{task.description}</p>}
             <div className="flex justify-between items-center mt-2 text-xs">
                 <span className={`px-2 py-1 rounded-full ${priorityStyles[task.priority].bg} ${priorityStyles[task.priority].text_color}`}>
                     {priorityStyles[task.priority].text}
@@ -298,22 +310,22 @@ const TasksApplication = () => {
                     {/* To Do Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">To Do ({taskColumns.todo.length})</h3>
-                        <div>{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
                     </div>
                     {/* In Progress Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">In Progress ({taskColumns.inProgress.length})</h3>
-                        <div>{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
                     </div>
                     {/* In Review Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">In Review ({taskColumns.inReview.length})</h3>
-                        <div>{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
                     </div>
                     {/* Done Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">Done ({taskColumns.done.length})</h3>
-                        <div>{taskColumns.done.map(task => <TaskCard key={task.id} task={task} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
                     </div>
                 </div>
             </main>

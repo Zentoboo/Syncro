@@ -30,18 +30,9 @@ export const AuthProvider = ({ children }) => {
             const savedUser = localStorage.getItem('user');
 
             if (savedToken && savedUser) {
-                try {
-                    // Verify token is still valid by making a test request
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-
-                    setToken(savedToken);
-                    setUser(JSON.parse(savedUser));
-                } catch (error) {
-                    // Token is invalid, clear it
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    delete axios.defaults.headers.common['Authorization'];
-                }
+                setToken(savedToken);
+                // The user object with the ID will now be correctly loaded from localStorage
+                setUser(JSON.parse(savedUser));
             }
             setLoading(false);
         };
@@ -51,29 +42,24 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            console.log('🔐 Attempting login with:', { username });
-            console.log('🌐 API Base URL:', axios.defaults.baseURL);
-
             const response = await axios.post('/api/auth/login', {
                 username,
                 password
             });
 
-            console.log('✅ Login response:', response.data);
+            // Destructure the new userId from the response
+            const { token: newToken, userId, username: userName, role } = response.data;
+            
+            // Create a complete user object
+            const userPayload = { id: userId, username: userName, role };
 
-            const { token: newToken, username: userName, role } = response.data;
-
-            // Save to localStorage
+            // Save to localStorage and state
             localStorage.setItem('token', newToken);
-            localStorage.setItem('user', JSON.stringify({ username: userName, role }));
-
-            // Update state
+            localStorage.setItem('user', JSON.stringify(userPayload));
             setToken(newToken);
-            setUser({ username: userName, role });
-
-            // Set axios default header
+            setUser(userPayload);
+            
             axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
             return { success: true };
         } catch (error) {
             console.error('❌ Login error:', error);
@@ -89,30 +75,27 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (username, email, password) => {
         try {
-            console.log('📝 Attempting registration with:', { username, email });
-
             const response = await axios.post('/api/auth/register', {
                 username,
                 email,
                 password
             });
 
-            console.log('✅ Registration response:', response.data);
+            // Destructure the new userId from the response
+            const { token: newToken, userId, username: userName, role } = response.data;
+            
+            // Create a complete user object
+            const userPayload = { id: userId, username: userName, role };
 
-            const { token: newToken, username: userName, role } = response.data;
-
-            // Save to localStorage
+            // Save to localStorage and state
             localStorage.setItem('token', newToken);
-            localStorage.setItem('user', JSON.stringify({ username: userName, role }));
-
-            // Update state
+            localStorage.setItem('user', JSON.stringify(userPayload));
             setToken(newToken);
-            setUser({ username: userName, role });
-
-            // Set axios default header
+            setUser(userPayload);
+            
             axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-
             return { success: true };
+
         } catch (error) {
             console.error('❌ Registration error:', error);
             console.error('📄 Error response:', error.response?.data);

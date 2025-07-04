@@ -30,7 +30,7 @@ namespace syncroAPI.Controllers
         {
             var membership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.UserId == userId && pm.IsActive);
-            
+
             return (membership != null, membership?.Role ?? "");
         }
 
@@ -221,7 +221,7 @@ namespace syncroAPI.Controllers
             {
                 var parentTask = await _context.Tasks
                     .FirstOrDefaultAsync(t => t.Id == request.ParentTaskId.Value);
-                
+
                 if (parentTask == null || parentTask.ProjectId != request.ProjectId)
                     return BadRequest("Invalid parent task");
             }
@@ -250,18 +250,22 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
+            // Fetch the task and the current user's membership in one query for efficiency
             var task = await _context.Tasks
                 .Include(t => t.Project)
+                    .ThenInclude(p => p.ProjectMembers)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
                 return NotFound("Task not found");
 
-            var (hasAccess, userRole) = await HasProjectAccess(task.ProjectId, userId);
-            if (!hasAccess)
-                return Forbid("You don't have access to this project");
+            var membership = task.Project.ProjectMembers.FirstOrDefault(pm => pm.UserId == userId && pm.IsActive);
 
-            // *** NEW: Workflow Logic for Status Changes ***
+            // Verify the user is a member of the project
+            if (membership == null)
+                return Forbid("You don't have access to this project.");
+
+            var userRole = membership.Role;
             var oldStatus = task.Status;
             var newStatus = request.Status;
 
@@ -269,42 +273,40 @@ namespace syncroAPI.Controllers
             {
                 bool isManager = userRole == "Admin" || userRole == "ProjectManager";
                 bool isAssignedUser = task.AssignedToUserId == userId;
+                var canUpdate = false;
 
-                // Contributor: ToDo -> InProgress
+                // Rule 1: Only the assigned user can start a task
                 if (oldStatus == Models.TaskStatus.ToDo && newStatus == Models.TaskStatus.InProgress && isAssignedUser)
-                {
-                    task.Status = newStatus;
-                }
-                // Contributor: InProgress -> InReview
+                    canUpdate = true;
+                // Rule 2: Only the assigned user can submit a task for review
                 else if (oldStatus == Models.TaskStatus.InProgress && newStatus == Models.TaskStatus.InReview && isAssignedUser)
-                {
-                    task.Status = newStatus;
-                }
-                // Manager: InReview -> Done (Approve)
+                    canUpdate = true;
+                // Rule 3: Only a manager can approve a task
                 else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.Done && isManager)
-                {
-                    task.Status = newStatus;
-                }
-                // Manager: InReview -> InProgress (Reject)
+                    canUpdate = true;
+                // Rule 4: Only a manager can reject a task (send it back to In Progress)
                 else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.InProgress && isManager)
+                    canUpdate = true;
+
+                if (canUpdate)
                 {
                     task.Status = newStatus;
                 }
-                else if (oldStatus != newStatus) // If any other status change is attempted
+                else
                 {
+                    // If the status change is not a valid transition, forbid it.
                     return Forbid("You do not have permission to make this status change.");
                 }
             }
 
-            // Validate assigned user is a project member
-            if (request.AssignedToUserId.HasValue)
+            // Validate assigned user is a project member if the assignment is being changed
+            if (request.AssignedToUserId.HasValue && request.AssignedToUserId != task.AssignedToUserId)
             {
-                var (assignedUserAccess, _) = await HasProjectAccess(task.ProjectId, request.AssignedToUserId.Value);
-                if (!assignedUserAccess)
-                    return BadRequest("Assigned user is not a member of this project");
+                if (!task.Project.ProjectMembers.Any(pm => pm.UserId == request.AssignedToUserId.Value && pm.IsActive))
+                    return BadRequest("Assigned user is not a member of this project.");
             }
-            
-            // Update other details
+
+            // Update other details from the request
             task.Title = request.Title;
             task.Description = request.Description;
             task.AssignedToUserId = request.AssignedToUserId;
@@ -313,6 +315,9 @@ namespace syncroAPI.Controllers
             task.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // FIX: Return the fully-formed TaskResponse DTO by calling GetTask.
+            // This prevents the 500 Internal Server Error caused by a JSON serialization cycle.
             return await GetTask(id);
         }
 
@@ -394,7 +399,7 @@ namespace syncroAPI.Controllers
                 .Include(t => t.Project)
                 .Include(t => t.AssignedTo)
                 .Include(t => t.SubTasks)
-                .Where(t => t.AssignedToUserId == userId && 
+                .Where(t => t.AssignedToUserId == userId &&
                            _context.ProjectMembers
                                .Any(pm => pm.ProjectId == t.ProjectId && pm.UserId == userId && pm.IsActive))
                 .Select(t => new TaskSummaryResponse
