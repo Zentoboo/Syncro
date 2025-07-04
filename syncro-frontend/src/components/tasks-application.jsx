@@ -23,6 +23,17 @@ const TrashIcon = () => (
     </svg>
 );
 
+const CommentIcon = () => (
+    <svg className="h-4 w-4 mr-1.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+);
+
+const PaperClipIcon = () => (
+    <svg className="h-4 w-4 mr-1.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+    </svg>
+);
 
 const priorityStyles = {
     0: { text: 'Low', bg: 'bg-gray-200', text_color: 'text-gray-800' },
@@ -116,8 +127,92 @@ const TaskModal = ({ isOpen, onClose, onSave, projectMembers, existingTask = nul
     );
 };
 
+// --- Submit for Review Modal ---
+const SubmitReviewModal = ({ isOpen, onClose, onSubmit, task }) => {
+    const [comment, setComment] = useState('');
+    const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleFileChange = (e) => {
+        if (e.target.files.length > 0) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        await onSubmit(task.id, { comment, file });
+        
+        // Reset state for next time
+        setLoading(false);
+        setComment('');
+        setFile(null);
+        e.target.reset(); // Resets the file input
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+                <h2 className="text-xl font-bold mb-4">Submit Task for Review: {task?.title}</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Add a comment (optional)</label>
+                        <textarea
+                            id="comment"
+                            placeholder="Describe your work, ask questions, or provide details for the reviewer."
+                            value={comment}
+                            onChange={e => setComment(e.target.value)}
+                            className="w-full p-2 border rounded mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            rows="4"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label htmlFor="file" className="block text-sm font-medium text-gray-700">Attach a file (optional)</label>
+                        <input
+                            id="file"
+                            type="file"
+                            onChange={handleFileChange}
+                            className="w-full text-sm text-gray-500 mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                        />
+                    </div>
+                    <div className="flex justify-end space-x-2 pt-4">
+                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-purple-400">
+                            {loading ? 'Submitting...' : 'Submit for Review'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
 // --- Task Card ---
-const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete }) => {
+const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOpenReviewModal }) => {
+
+    // Helper function to handle secure file downloads
+    const handleDownload = async (attachmentId, fileName) => {
+        try {
+            const response = await axios.get(`/api/file/download/${attachmentId}`, {
+                responseType: 'blob', // This is important to handle binary file data
+            });
+            // Create a temporary link to trigger the download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            alert('Could not download the file.');
+        }
+    };
     
     const renderActions = () => {
         const isManager = userRole === 'Admin' || userRole === 'ProjectManager';
@@ -134,8 +229,7 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete }) =>
             case 1: // In Progress
                 // Only show "Submit for Review" if the task is assigned to the current user
                 if (isAssignedToMe) {
-                    return <button onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, 2); }} className="w-full mt-2 px-3 py-1 text-xs text-white bg-purple-500 rounded hover:bg-purple-600">Submit for Review</button>;
-                }
+                    return <button onClick={(e) => { e.stopPropagation(); onOpenReviewModal(task); }} className="w-full mt-2 px-3 py-1 text-xs text-white bg-purple-500 rounded hover:bg-purple-600">Submit for Review</button>;                }
                 return null;
             case 2: // In Review
                 // Only show "Reject" and "Approve" to managers
@@ -158,16 +252,44 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete }) =>
             <div className="flex justify-between items-start cursor-pointer" onClick={() => onEdit(task)}>
                 <h4 className="font-semibold text-sm">{task.title}</h4>
                 <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRole}>
-                     <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
                 </RoleBasedComponent>
             </div>
-            {task.description && <p className="text-xs text-gray-600 mt-2">{task.description}</p>}
+            {task.description && <p className="text-xs text-gray-600 mt-2 whitespace-pre-wrap">{task.description}</p>}
             <div className="flex justify-between items-center mt-2 text-xs">
                 <span className={`px-2 py-1 rounded-full ${priorityStyles[task.priority].bg} ${priorityStyles[task.priority].text_color}`}>
                     {priorityStyles[task.priority].text}
                 </span>
                 <span>{task.assignedTo?.username || 'Unassigned'}</span>
             </div>
+            
+            {/* Display Comments */}
+            {task.comments && task.comments.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                    <h5 className="text-xs font-bold text-gray-500 mb-2 flex items-center"><CommentIcon /> Latest Comment</h5>
+                    <div className="text-xs bg-gray-50 p-2 rounded">
+                        <p className="whitespace-pre-wrap break-words">{task.comments[0].content}</p>
+                        <p className="text-right text-gray-400 mt-1">- {task.comments[0].user.username}</p>
+                    </div>
+                </div>
+            )}
+            
+            {/* Display Attachments */}
+            {task.attachments && task.attachments.length > 0 && (
+                <div className="mt-3 pt-2">
+                     <h5 className="text-xs font-bold text-gray-500 mb-2 flex items-center"><PaperClipIcon /> Attachments</h5>
+                    <ul className="space-y-1">
+                        {task.attachments.map(att => (
+                            <li key={att.id}>
+                                <button onClick={() => handleDownload(att.id, att.fileName)} className="text-xs text-blue-600 hover:underline hover:text-blue-800 text-left break-all">
+                                    {att.fileName}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+            
             {renderActions()}
         </div>
     );
@@ -184,6 +306,8 @@ const TasksApplication = () => {
     const [error, setError] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [reviewingTask, setReviewingTask] = useState(null);
 
     const userRoleInProject = project?.members?.find(m => m.user.id === user.id)?.role;
 
@@ -258,6 +382,58 @@ const TasksApplication = () => {
         }
     };
 
+    const handleOpenReviewModal = (task) => {
+        setReviewingTask(task);
+        setIsReviewModalOpen(true);
+    };
+
+    const handleSubmitForReview = async (taskId, { comment, file }) => {
+        setLoading(true); // Use the main loading state to overlay the screen
+        setError('');
+        try {
+            // 1. Upload file if one was selected
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                await axios.post(`/api/file/upload/${taskId}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+            }
+
+            // 2. Add comment if one was provided
+            if (comment.trim()) {
+                await axios.post(`/api/task/${taskId}/comments`, { content: comment });
+            }
+
+            // 3. Update the task status to "In Review"
+            const taskToUpdate = tasks.find(t => t.id === taskId);
+            if (taskToUpdate) {
+                const updatePayload = {
+                    title: taskToUpdate.title,
+                    description: taskToUpdate.description,
+                    assignedToUserId: taskToUpdate.assignedTo ? taskToUpdate.assignedTo.id : null,
+                    status: 2, // In Review status
+                    priority: taskToUpdate.priority,
+                    dueDate: taskToUpdate.dueDate,
+                };
+                await axios.put(`/api/task/${taskId}`, updatePayload);
+            } else {
+                 throw new Error("Task not found, cannot update status.");
+            }
+
+            fetchData(); // Refresh all data on success
+        } catch (err) {
+            console.error("Failed to submit for review:", err);
+            setError(err.response?.data?.message || err.message || "Failed to submit for review.");
+            setLoading(false); // Ensure loading is turned off on error
+        } finally {
+            // Close the modal regardless of outcome
+            setIsReviewModalOpen(false);
+            setReviewingTask(null);
+        }
+    };
+
+
     const handleDeleteTask = async (taskId) => {
         if (window.confirm("Are you sure you want to delete this task?")) {
             try {
@@ -315,17 +491,17 @@ const TasksApplication = () => {
                     {/* In Progress Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">In Progress ({taskColumns.inProgress.length})</h3>
-                        <div>{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
                     </div>
                     {/* In Review Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">In Review ({taskColumns.inReview.length})</h3>
-                        <div>{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
                     </div>
                     {/* Done Column */}
                     <div className="bg-gray-200 p-4 rounded-lg">
                         <h3 className="font-bold mb-4">Done ({taskColumns.done.length})</h3>
-                        <div>{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                        <div>{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
                     </div>
                 </div>
             </main>
@@ -336,6 +512,12 @@ const TasksApplication = () => {
                 onSave={handleSaveTask}
                 projectMembers={project.members}
                 existingTask={editingTask}
+            />
+            <SubmitReviewModal
+                isOpen={isReviewModalOpen}
+                onClose={() => setIsReviewModalOpen(false)}
+                onSubmit={handleSubmitForReview}
+                task={reviewingTask}
             />
         </div>
     );

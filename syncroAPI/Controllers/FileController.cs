@@ -40,7 +40,7 @@ namespace syncroAPI.Controllers
         }
 
         [HttpPost("upload/{taskId}")]
-        public async Task<ActionResult<TaskAttachmentResponse>> UploadFile(int taskId, IFormFile file)
+        public async Task<ActionResult<TaskAttachmentResponse>> UploadFile(int taskId, [FromForm] IFormFile file)
         {
             var userId = GetCurrentUserId();
 

@@ -46,6 +46,8 @@ namespace syncroAPI.Controllers
                 .Include(t => t.Project)
                 .Include(t => t.AssignedTo)
                 .Include(t => t.SubTasks)
+                .Include(t => t.Comments).ThenInclude(c => c.User)
+                .Include(t => t.Attachments).ThenInclude(c => c.UploadedBy)
                 .Where(t => _context.ProjectMembers
                     .Any(pm => pm.ProjectId == t.ProjectId && pm.UserId == userId && pm.IsActive));
 
@@ -59,28 +61,45 @@ namespace syncroAPI.Controllers
                 query = query.Where(t => t.AssignedToUserId == userId);
 
             var tasks = await query
-                .Where(t => t.ParentTaskId == null) // Only main tasks, not subtasks
-                .Select(t => new TaskSummaryResponse
-                {
-                    Id = t.Id,
-                    Title = t.Title,
-                    Description = t.Description,
-                    Status = t.Status,
-                    Priority = t.Priority,
-                    DueDate = t.DueDate,
-                    AssignedTo = t.AssignedTo != null ? new UserSummaryResponse
-                    {
-                        Id = t.AssignedTo.Id,
-                        Username = t.AssignedTo.Username,
-                        Email = t.AssignedTo.Email
-                    } : null,
-                    ProjectName = t.Project.Name,
-                    SubTaskCount = t.SubTasks.Count,
-                    CompletedSubTaskCount = t.SubTasks.Count(st => st.Status == Models.TaskStatus.Done)
-                })
-                .OrderByDescending(t => t.Priority)
-                .ThenBy(t => t.DueDate)
-                .ToListAsync();
+        .Where(t => t.ParentTaskId == null) // Only main tasks, not subtasks
+        .Select(t => new TaskSummaryResponse
+        {
+            Id = t.Id,
+            Title = t.Title,
+            Description = t.Description,
+            Status = t.Status,
+            Priority = t.Priority,
+            DueDate = t.DueDate,
+            AssignedTo = t.AssignedTo != null ? new UserSummaryResponse
+            {
+                Id = t.AssignedTo.Id,
+                Username = t.AssignedTo.Username,
+                Email = t.AssignedTo.Email
+            } : null,
+            ProjectName = t.Project.Name,
+            SubTaskCount = t.SubTasks.Count,
+            CompletedSubTaskCount = t.SubTasks.Count(st => st.Status == Models.TaskStatus.Done),
+
+            // Map the comments to the DTO
+            Comments = t.Comments.OrderByDescending(c => c.CreatedAt).Select(c => new TaskCommentResponse
+            {
+                Id = c.Id,
+                Content = c.Content,
+                CreatedAt = c.CreatedAt,
+                User = new UserSummaryResponse { Id = c.User.Id, Username = c.User.Username }
+            }).ToList(),
+
+            // Map the attachments to the DTO
+            Attachments = t.Attachments.Select(a => new TaskAttachmentResponse
+            {
+                Id = a.Id,
+                FileName = a.FileName,
+                UploadedBy = new UserSummaryResponse { Id = a.UploadedBy.Id, Username = a.UploadedBy.Username }
+            }).ToList()
+        })
+        .OrderByDescending(t => t.Priority)
+        .ThenBy(t => t.DueDate)
+        .ToListAsync();
 
             return Ok(tasks);
         }
