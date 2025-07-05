@@ -15,6 +15,7 @@ namespace syncroAPI.Data
         public DbSet<Models.Task> Tasks { get; set; }
         public DbSet<TaskComment> TaskComments { get; set; }
         public DbSet<TaskAttachment> TaskAttachments { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -195,6 +196,27 @@ namespace syncroAPI.Data
                     .WithMany(u => u.UploadedAttachments)
                     .HasForeignKey(e => e.UploadedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Notification configuration
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(e => e.User)
+                    .WithMany() // A user can have many notifications
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.TriggeredByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.TriggeredByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.RelatedTask)
+                    .WithMany()
+                    .HasForeignKey(e => e.RelatedTaskId)
+                    .OnDelete(DeleteBehavior.SetNull); // If task is deleted, notification remains
             });
         }
     }

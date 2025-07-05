@@ -217,32 +217,27 @@ namespace syncroAPI.Controllers
         public async Task<ActionResult<TaskResponse>> CreateTask([FromBody] CreateTaskRequest request)
         {
             var userId = GetCurrentUserId();
+            var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+                return Unauthorized("User not found.");
+            }
 
             // Check project access and role
             var (hasAccess, userRole) = await HasProjectAccess(request.ProjectId, userId);
             if (!hasAccess)
                 return Forbid("You don't have access to this project.");
 
-            // *** NEW: Only Admin or ProjectManager can create tasks ***
             if (userRole != "Admin" && userRole != "ProjectManager")
                 return Forbid("You don't have permission to create tasks in this project.");
 
-            // Validate assigned user is a project member
+            // Validate assigned user
             if (request.AssignedToUserId.HasValue)
             {
                 var (assignedUserAccess, _) = await HasProjectAccess(request.ProjectId, request.AssignedToUserId.Value);
                 if (!assignedUserAccess)
                     return BadRequest("Assigned user is not a member of this project");
-            }
-
-            // Validate parent task belongs to same project
-            if (request.ParentTaskId.HasValue)
-            {
-                var parentTask = await _context.Tasks
-                    .FirstOrDefaultAsync(t => t.Id == request.ParentTaskId.Value);
-
-                if (parentTask == null || parentTask.ProjectId != request.ProjectId)
-                    return BadRequest("Invalid parent task");
             }
 
             var task = new Models.Task
@@ -255,11 +250,26 @@ namespace syncroAPI.Controllers
                 ParentTaskId = request.ParentTaskId,
                 Priority = request.Priority,
                 DueDate = request.DueDate,
-                Status = Models.TaskStatus.ToDo // Always start as ToDo
+                Status = Models.TaskStatus.ToDo
             };
 
             _context.Tasks.Add(task);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // <-- STEP 1: Save the task to get its real ID
+
+            // --- NOTIFICATION LOGIC ---
+            // Now that the task is saved, task.Id has a valid, non-zero value
+            if (task.AssignedToUserId.HasValue)
+            {
+                var notification = new Notification
+                {
+                    UserId = task.AssignedToUserId.Value,
+                    Message = $"{user.Username} assigned you a new task: \"{task.Title}\"",
+                    RelatedTaskId = task.Id, // <-- This is now the correct, database-generated ID
+                    TriggeredByUserId = userId
+                };
+                _context.Notifications.Add(notification);
+                await _context.SaveChangesAsync(); // <-- STEP 2: Save the new notification
+            }
 
             return await GetTask(task.Id);
         }
@@ -268,25 +278,28 @@ namespace syncroAPI.Controllers
         public async Task<ActionResult<TaskResponse>> UpdateTask(int id, [FromBody] UpdateTaskRequest request)
         {
             var userId = GetCurrentUserId();
+            var user = await _context.Users.FindAsync(userId);
 
-            // Fetch the task and the current user's membership in one query for efficiency
+            // FIX: Add a null check for the user initiating the action.
+            if (user == null)
+            {
+                return Unauthorized("User not found.");
+            }
+
             var task = await _context.Tasks
                 .Include(t => t.Project)
                     .ThenInclude(p => p.ProjectMembers)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
-            if (task == null)
-                return NotFound("Task not found");
+            if (task == null) return NotFound("Task not found");
 
             var membership = task.Project.ProjectMembers.FirstOrDefault(pm => pm.UserId == userId && pm.IsActive);
-
-            // Verify the user is a member of the project
-            if (membership == null)
-                return Forbid("You don't have access to this project.");
+            if (membership == null) return Forbid("You don't have access to this project.");
 
             var userRole = membership.Role;
             var oldStatus = task.Status;
             var newStatus = request.Status;
+            var originalAssigneeId = task.AssignedToUserId;
 
             if (oldStatus != newStatus)
             {
@@ -294,38 +307,21 @@ namespace syncroAPI.Controllers
                 bool isAssignedUser = task.AssignedToUserId == userId;
                 var canUpdate = false;
 
-                // Rule 1: Only the assigned user can start a task
-                if (oldStatus == Models.TaskStatus.ToDo && newStatus == Models.TaskStatus.InProgress && isAssignedUser)
-                    canUpdate = true;
-                // Rule 2: Only the assigned user can submit a task for review
-                else if (oldStatus == Models.TaskStatus.InProgress && newStatus == Models.TaskStatus.InReview && isAssignedUser)
-                    canUpdate = true;
-                // Rule 3: Only a manager can approve a task
-                else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.Done && isManager)
-                    canUpdate = true;
-                // Rule 4: Only a manager can reject a task (send it back to In Progress)
-                else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.InProgress && isManager)
-                    canUpdate = true;
+                if (oldStatus == Models.TaskStatus.ToDo && newStatus == Models.TaskStatus.InProgress && isAssignedUser) canUpdate = true;
+                else if (oldStatus == Models.TaskStatus.InProgress && newStatus == Models.TaskStatus.InReview && isAssignedUser) canUpdate = true;
+                else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.Done && isManager) canUpdate = true;
+                else if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.InProgress && isManager) canUpdate = true;
 
-                if (canUpdate)
-                {
-                    task.Status = newStatus;
-                }
-                else
-                {
-                    // If the status change is not a valid transition, forbid it.
-                    return Forbid("You do not have permission to make this status change.");
-                }
+                if (canUpdate) task.Status = newStatus;
+                else return Forbid("You do not have permission to make this status change.");
             }
 
-            // Validate assigned user is a project member if the assignment is being changed
             if (request.AssignedToUserId.HasValue && request.AssignedToUserId != task.AssignedToUserId)
             {
                 if (!task.Project.ProjectMembers.Any(pm => pm.UserId == request.AssignedToUserId.Value && pm.IsActive))
                     return BadRequest("Assigned user is not a member of this project.");
             }
 
-            // Update other details from the request
             task.Title = request.Title;
             task.Description = request.Description;
             task.AssignedToUserId = request.AssignedToUserId;
@@ -333,12 +329,57 @@ namespace syncroAPI.Controllers
             task.DueDate = request.DueDate;
             task.UpdatedAt = DateTime.UtcNow;
 
+            // --- NOTIFICATION LOGIC ---
+            if (request.AssignedToUserId.HasValue && request.AssignedToUserId != originalAssigneeId)
+            {
+                var notification = new Notification
+                {
+                    UserId = request.AssignedToUserId.Value,
+                    Message = $"{user.Username} assigned you the task: \"{task.Title}\"",
+                    RelatedTaskId = task.Id,
+                    TriggeredByUserId = userId
+                };
+                _context.Notifications.Add(notification);
+            }
+
+            if (newStatus == Models.TaskStatus.InReview && oldStatus != Models.TaskStatus.InReview)
+            {
+                var managers = task.Project.ProjectMembers
+                    .Where(pm => pm.Role == "Admin" || pm.Role == "ProjectManager")
+                    .ToList();
+
+                foreach (var manager in managers)
+                {
+                    var notification = new Notification
+                    {
+                        UserId = manager.UserId,
+                        Message = $"{user.Username} submitted a task for review: \"{task.Title}\"",
+                        RelatedTaskId = task.Id,
+                        TriggeredByUserId = userId
+                    };
+                    _context.Notifications.Add(notification);
+                }
+            }
+
             await _context.SaveChangesAsync();
 
-            // FIX: Return the fully-formed TaskResponse DTO by calling GetTask.
-            // This prevents the 500 Internal Server Error caused by a JSON serialization cycle.
+            // --- NOTIFICATION LOGIC ---
+            // Now that the task is saved, task.Id has a valid, non-zero value
+            if (task.AssignedToUserId.HasValue)
+            {
+                var notification = new Notification
+                {
+                    UserId = task.AssignedToUserId.Value,
+                    Message = $"{user.Username} assigned you a new task: \"{task.Title}\"",
+                    RelatedTaskId = task.Id, // <-- This is now the correct, database-generated ID
+                    TriggeredByUserId = userId
+                };
+                _context.Notifications.Add(notification);
+                await _context.SaveChangesAsync(); // <-- STEP 2: Save the new notification
+            }
             return await GetTask(id);
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
