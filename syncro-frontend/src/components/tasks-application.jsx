@@ -1,10 +1,11 @@
-// src/components/tasks-application.jsx
+// src/components/tasks-application.jsx - Updated with backdrop blur modals
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useRBAC } from '../hooks/useRBAC';
 import { RoleBasedComponent } from './RBACComponents';
+import { useBreadcrumb } from '../contexts/BreadcrumbContext';
 
 // --- Helper Components ---
 const Spinner = ({ size = 'h-5 w-5' }) => (
@@ -299,6 +300,7 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
 const TasksApplication = () => {
     const { projectId } = useParams();
     const { user } = useAuth();
+    const { updateProjectInfo } = useBreadcrumb();
     const [project, setProject] = useState(null);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -320,6 +322,9 @@ const TasksApplication = () => {
             ]);
             setProject(projectRes.data);
             setTasks(tasksRes.data);
+            
+            // Update breadcrumb context with project name
+            updateProjectInfo(projectId, projectRes.data.name);
         } catch (err) {
             setError('Failed to fetch project data. You may not have access to this project.');
             console.error(err);

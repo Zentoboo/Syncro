@@ -1,12 +1,15 @@
-// src/App.js
+// src/App.js - Updated with Contributors route
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { BreadcrumbProvider } from './contexts/BreadcrumbContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import TasksApplication from './components/tasks-application';
+import Contributors from './components/Contributors';
+import Breadcrumb from './components/Breadcrumb';
 
 const Unauthorized = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -103,9 +106,11 @@ const AdminPanel = () => (
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
+      <BreadcrumbProvider>
+        <Router>
+          <div className="App">
+            <Breadcrumb />
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -121,12 +126,22 @@ function App() {
               }
             />
 
-            {/* Project Manager Tasks Management Route */}
+            {/* Project Tasks Management Route */}
             <Route
               path="/project/:projectId/tasks"
               element={
                 <ProtectedRoute>
                   <TasksApplication />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Contributors Page Route */}
+            <Route
+              path="/project/:projectId/contributors"
+              element={
+                <ProtectedRoute>
+                  <Contributors />
                 </ProtectedRoute>
               }
             />
@@ -146,6 +161,7 @@ function App() {
           </Routes>
         </div>
       </Router>
+      </BreadcrumbProvider>
     </AuthProvider>
   );
 }

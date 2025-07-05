@@ -304,6 +304,12 @@ const Dashboard = () => {
         }
     };
 
+    const handleViewAllContributors = () => {
+        if(selectedProject) {
+            navigate(`/project/${selectedProject.id}/contributors`);
+        }
+    };
+
     const ProjectStatus = ({ data }) => (
         <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-xl font-bold mb-4">Project Status</h3>
@@ -321,17 +327,53 @@ const Dashboard = () => {
         </div>
     );
 
-    const TeamMembers = ({ members }) => (
+    const Contributors = ({ members, onViewAll }) => (
         <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-xl font-bold mb-4">Team Members</h3>
-            <ul className="space-y-2">
-                {members.map(member => (
-                    <li key={member.user.id} className="flex justify-between items-center text-sm">
-                        <span>{member.user.username}</span>
-                        <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">{member.role}</span>
-                    </li>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Contributors</h3>
+                <button 
+                    onClick={onViewAll}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                    View All →
+                </button>
+            </div>
+            <div className="space-y-3">
+                {members.slice(0, 5).map(member => (
+                    <div key={member.user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                {member.user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div className="font-medium text-sm">{member.user.username}</div>
+                                <div className="text-xs text-gray-500">{member.user.email}</div>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-sm font-medium text-gray-900">
+                                {member.completedTasks}/{member.totalTasks}
+                            </div>
+                            <div className="text-xs text-gray-500">tasks done</div>
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5 mt-1">
+                                <div 
+                                    className="bg-green-500 h-1.5 rounded-full" 
+                                    style={{ 
+                                        width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` 
+                                    }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
                 ))}
-            </ul>
+                {members.length > 5 && (
+                    <div className="text-center pt-2">
+                        <span className="text-sm text-gray-500">
+                            +{members.length - 5} more contributors
+                        </span>
+                    </div>
+                )}
+            </div>
         </div>
     );
 
@@ -462,7 +504,7 @@ const Dashboard = () => {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <ProjectStatus data={projectDashboardData} />
-                                        <TeamMembers members={projectDashboardData.tasksByMember} />
+                                        <Contributors members={projectDashboardData.tasksByMember} onViewAll={handleViewAllContributors} />
                                     </div>
                                 </div>
                             ) : (
