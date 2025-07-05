@@ -25,7 +25,7 @@ namespace syncroAPI.Controllers
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return int.Parse(userIdClaim ?? "0");
         }
-        
+
         private string GetCurrentUserRole()
         {
             return User.FindFirst(ClaimTypes.Role)?.Value ?? "";
@@ -249,19 +249,56 @@ namespace syncroAPI.Controllers
 
             return Ok(response);
         }
+        
+        [HttpGet("search-users")]
+        public async Task<ActionResult<IEnumerable<UserSearchResponse>>> SearchUsers([FromQuery] string q)
+        {
+            // Only allow project managers and admins to search for users
+            var userRole = GetCurrentUserRole();
+            if (userRole != "Admin" && userRole != "ProjectManager")
+                return Forbid("Only admins and project managers can search for users");
+
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+                return BadRequest("Search query must be at least 2 characters long");
+
+            var searchTerm = q.Trim().ToLower();
+
+            var users = await _context.Users
+                .Where(u => u.IsActive &&
+                           (u.Username.ToLower().Contains(searchTerm) ||
+                            u.Email.ToLower().Contains(searchTerm)))
+                .Select(u => new UserSearchResponse
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Role = u.Role
+                })
+                .OrderBy(u => u.Username)
+                .Take(10) // Limit results to prevent performance issues
+                .ToListAsync();
+
+            return Ok(users);
+        }
 
         [HttpPost("{id}/members")]
         public async Task<ActionResult<ProjectMemberResponse>> AddProjectMember(int id, [FromBody] AddProjectMemberRequest request)
         {
             var userId = GetCurrentUserId();
 
+            // Get project to check ownership
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
+                return NotFound("Project not found");
+
             var membership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
 
-            // *** THIS IS THE FIX ***
-            // Allow both Admin and ProjectManager to add members
-            if (membership == null || (membership.Role != "Admin" && membership.Role != "ProjectManager"))
-                return Forbid();
+            var isProjectOwner = project.CreatedByUserId == userId;
+
+            // Allow both Admin, ProjectManager, and Project Owner to add members
+            if (membership == null || (membership.Role != "Admin" && membership.Role != "ProjectManager" && !isProjectOwner))
+                return Forbid("You don't have permission to add members to this project");
 
             var userToAdd = await _context.Users
                 .FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive);
@@ -316,23 +353,42 @@ namespace syncroAPI.Controllers
         {
             var userId = GetCurrentUserId();
 
+            // Get the project to check ownership
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (project == null)
+                return NotFound("Project not found");
+
+            // Check if user is project owner or admin
             var userMembership = await _context.ProjectMembers
                 .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
 
-            if (userMembership == null || userMembership.Role != "Admin")
-                return Forbid();
+            var isProjectOwner = project.CreatedByUserId == userId;
+            var isAdmin = userMembership?.Role == "Admin";
+
+            // Allow project owners and admins to remove members
+            if (!isProjectOwner && !isAdmin)
+                return Forbid("Only project owners and admins can remove members");
 
             var memberToRemove = await _context.ProjectMembers
+                .Include(pm => pm.User)
                 .FirstOrDefaultAsync(pm => pm.Id == memberId && pm.ProjectId == id);
 
             if (memberToRemove == null)
                 return NotFound("Member not found");
 
-            var project = await _context.Projects.FindAsync(id);
-            if (project != null && memberToRemove.UserId == project.CreatedByUserId)
+            // Prevent removing the project creator (project owner cannot be removed)
+            if (memberToRemove.UserId == project.CreatedByUserId)
                 return BadRequest("Cannot remove project creator");
 
+            // Prevent users from removing themselves
+            if (memberToRemove.UserId == userId)
+                return BadRequest("You cannot remove yourself from the project");
+
+            // Set member as inactive instead of deleting to preserve data integrity
             memberToRemove.IsActive = false;
+
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -357,5 +413,12 @@ namespace syncroAPI.Controllers
 
             return NoContent();
         }
+    }
+    public class UserSearchResponse
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
     }
 }

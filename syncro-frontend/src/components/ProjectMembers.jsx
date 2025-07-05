@@ -1,4 +1,3 @@
-// src/components/ProjectMembers.jsx - Complete updated version
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -18,7 +17,7 @@ const SearchIcon = () => (
 
 const CrownIcon = () => (
     <svg className="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M5 4a1 1 0 00-.707 1.707L8 9.414V17a1 1 0 001 1h2a1 1 0 001-1V9.414l3.707-3.707A1 1 0 0015 4H5z"/>
+        <path d="M5 4a1 1 0 00-.707 1.707L8 9.414V17a1 1 0 001 1h2a1 1 0 001-1V9.414l3.707-3.707A1 1 0 0015 4H5z" />
     </svg>
 );
 
@@ -68,27 +67,27 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
     const searchUsers = async () => {
         setLoading(true);
         setError('');
-        
+
         try {
             console.log('Searching for users with term:', searchTerm);
-            
-            const response = await axios.get(`/api/user/search?q=${encodeURIComponent(searchTerm)}`);
-            
+
+            const response = await axios.get(`/api/project/search-users?q=${encodeURIComponent(searchTerm)}`);
+
             console.log('Search response:', response.data);
-            
+
             // Filter out users who are already members
             const currentMemberIds = currentMembers.map(m => m.user.id);
             const filteredResults = response.data.filter(user => !currentMemberIds.includes(user.id));
-            
+
             setSearchResults(filteredResults);
             setShowResults(true);
-            
+
             if (filteredResults.length === 0 && response.data.length > 0) {
                 setError('All matching users are already project members');
             }
         } catch (error) {
             console.error('Error searching users:', error);
-            
+
             if (error.response?.status === 403) {
                 setError('You do not have permission to search for users');
             } else if (error.response?.status === 400) {
@@ -96,7 +95,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
             } else {
                 setError('Failed to search users. Please try again.');
             }
-            
+
             setSearchResults([]);
             setShowResults(false);
         } finally {
@@ -107,16 +106,16 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
     const handleAddUser = async (user) => {
         try {
             console.log('Adding user:', user, 'with role:', selectedRole);
-            
+
             setLoading(true);
             await onAddMember(user.username, selectedRole);
-            
+
             // Clear search after successful addition
             setSearchTerm('');
             setSearchResults([]);
             setShowResults(false);
             setError('');
-            
+
         } catch (error) {
             console.error('Error adding member:', error);
             setError('Failed to add member. Please try again.');
@@ -129,7 +128,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
         const value = e.target.value;
         setSearchTerm(value);
         setError('');
-        
+
         if (value.length < 2) {
             setShowResults(false);
         }
@@ -163,7 +162,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
                 <SearchIcon />
                 <span className="ml-2">Add New Member</span>
             </h3>
-            
+
             <div className="space-y-4">
                 <div className="flex space-x-4">
                     <div className="flex-1 relative">
@@ -185,7 +184,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
                             </div>
                         )}
                     </div>
-                    
+
                     <select
                         value={selectedRole}
                         onChange={(e) => setSelectedRole(e.target.value)}
@@ -273,7 +272,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
 const MemberCard = ({ member, isOwner, currentUser, userRole, onRemoveMember, onUpdateRole, isCurrentUserProjectOwner }) => {
     const [isUpdatingRole, setIsUpdatingRole] = useState(false);
     const isSelf = member.user.id === currentUser.id;
-    
+
     // Updated permission logic - Project owner can kick anyone except themselves
     const canRemove = (userRole === 'Admin' && !isSelf) || (isCurrentUserProjectOwner && !isSelf);
     const canChangeRole = userRole === 'Admin' && !isSelf;
@@ -293,7 +292,7 @@ const MemberCard = ({ member, isOwner, currentUser, userRole, onRemoveMember, on
 
     const handleRoleChange = async (newRole) => {
         if (newRole === member.role) return;
-        
+
         setIsUpdatingRole(true);
         try {
             await onUpdateRole(member.id, newRole);
@@ -387,6 +386,19 @@ const ProjectMembers = () => {
     const isProjectOwner = project?.createdBy?.id === user.id;
     const canManageMembers = userRoleInProject === 'Admin' || userRoleInProject === 'ProjectManager' || isProjectOwner;
 
+    // Debug logging
+    useEffect(() => {
+        if (project && user) {
+            console.log('Project Members Debug Info:');
+            console.log('- Current User ID:', user.id);
+            console.log('- Project Creator ID:', project.createdBy?.id);
+            console.log('- Is Project Owner:', isProjectOwner);
+            console.log('- User Role in Project:', userRoleInProject);
+            console.log('- Can Manage Members:', canManageMembers);
+            console.log('- Project Members:', members.map(m => ({ id: m.id, userId: m.user.id, username: m.user.username, role: m.role })));
+        }
+    }, [project, user, members, userRoleInProject, isProjectOwner, canManageMembers]);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError('');
@@ -434,26 +446,47 @@ const ProjectMembers = () => {
     };
 
     const handleRemoveMember = async (memberId, username) => {
-        const kickMessage = isProjectOwner 
+        const kickMessage = isProjectOwner
             ? `Are you sure you want to kick ${username} from this project? They will lose access to the project, but all their past contributions (tasks, comments, files) will remain intact.`
             : `Are you sure you want to remove ${username} from this project? Their contributions will remain, but they will lose access to the project.`;
-        
+
         if (window.confirm(kickMessage)) {
             try {
-                await axios.delete(`/api/project/${projectId}/members/${memberId}`);
+                console.log('Attempting to remove member:', { memberId, username, projectId });
+                console.log('Current user role:', userRoleInProject, 'Is project owner:', isProjectOwner);
+
+                const response = await axios.delete(`/api/project/${projectId}/members/${memberId}`);
+                console.log('Remove member response:', response);
+
                 // Refresh data without using fetchData callback
-                const response = await axios.get(`/api/project/${projectId}`);
-                setProject(response.data);
-                setMembers(response.data.members || []);
-                
-                const successMessage = isProjectOwner 
+                const refreshResponse = await axios.get(`/api/project/${projectId}`);
+                setProject(refreshResponse.data);
+                setMembers(refreshResponse.data.members || []);
+
+                const successMessage = isProjectOwner
                     ? `${username} has been kicked from the project`
                     : `${username} has been removed from the project`;
                 setSuccessMessage(successMessage);
+
+                // Clear any existing errors
+                setError('');
             } catch (error) {
-                const errorMessage = isProjectOwner 
-                    ? 'Failed to kick member from project'
-                    : 'Failed to remove member';
+                console.error('Error removing member:', error);
+                console.error('Error response:', error.response?.data);
+                console.error('Error status:', error.response?.status);
+
+                let errorMessage = 'Failed to remove member';
+
+                if (error.response?.status === 403) {
+                    errorMessage = 'You do not have permission to remove this member';
+                } else if (error.response?.status === 404) {
+                    errorMessage = 'Member not found or project not found';
+                } else if (error.response?.status === 400) {
+                    errorMessage = error.response?.data || 'Cannot remove this member';
+                } else if (error.response?.data) {
+                    errorMessage = error.response.data;
+                }
+
                 setError(errorMessage);
                 setTimeout(() => setError(''), 5000);
             }
@@ -538,7 +571,22 @@ const ProjectMembers = () => {
                             </p>
                         </div>
                         <div className="flex items-center space-x-4">
-                            {/* Removed buttons as requested */}
+                            {/* Debug button - remove after testing */}
+                            {(isProjectOwner || userRoleInProject === 'Admin') && (
+                                <button
+                                    onClick={() => {
+                                        console.log('Debug: Testing permissions');
+                                        console.log('User ID:', user.id);
+                                        console.log('Project Owner ID:', project?.createdBy?.id);
+                                        console.log('Is Owner:', isProjectOwner);
+                                        console.log('Role:', userRoleInProject);
+                                        alert(`Debug: User ${user.id}, Owner: ${isProjectOwner}, Role: ${userRoleInProject}`);
+                                    }}
+                                    className="px-3 py-1 bg-gray-500 text-white text-xs rounded"
+                                >
+                                    Debug Permissions
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
