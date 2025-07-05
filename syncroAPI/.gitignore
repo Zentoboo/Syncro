@@ -4,6 +4,9 @@
 #localhost info
 appsettings.json
 
+# Ignore user-uploaded content
+wwwroot/uploads/
+
 # User-specific files
 *.suo
 *.user
