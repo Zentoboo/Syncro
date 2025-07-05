@@ -377,60 +377,76 @@ const Dashboard = () => {
                     <AdminOnly><UserManagement /></AdminOnly>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        {/* Left Sidebar */}
+                        {/* Left Sidebar - My Projects */}
                         <div className="lg:col-span-1">
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold">My Projects</h2>
+                                    {/* NEW PROJECT BUTTON*/}
+                                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={user?.role}>
+                                        <button
+                                            onClick={() => setIsCreateModalOpen(true)}
+                                            className="flex items-center justify-center p-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                                            title="Create New Project"
+                                        >
+                                            <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </button>
+                                    </RoleBasedComponent>
                                 </div>
                                 {loading.projects ? (
                                     <div className="flex justify-center items-center h-32"><Spinner /></div>
                                 ) : (
-                                    <ul className="space-y-2">
-                                        {projects.map(project => (
-                                            <li key={project.id} onClick={() => handleSelectProject(project)} className={`p-3 rounded-md cursor-pointer transition-colors ${selectedProject?.id === project.id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-blue-100'}`}>
-                                                <div className="font-semibold">{project.name}</div>
-                                                <div className="text-sm">{project.taskCount} tasks</div>
-                                            </li>
-                                        ))}
+                                    <>
+                                        <ul className="space-y-2">
+                                            {projects.map(project => (
+                                                <li key={project.id} onClick={() => handleSelectProject(project)} className={`p-3 rounded-md cursor-pointer transition-colors ${selectedProject?.id === project.id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-blue-100'}`}>
+                                                    <div className="font-semibold">{project.name}</div>
+                                                    <div className="text-sm">{project.taskCount} tasks</div>
+                                                </li>
+                                            ))}
+                                        </ul>
                                         {projects.length === 0 && (
-                                            <li className="text-center text-gray-500 py-8">No projects found.</li>
+                                            <div className="text-center text-gray-500 py-8">
+                                                <p className="mb-4">No projects found.</p>
+                                                {canCreateProject() && (
+                                                    <button 
+                                                        onClick={() => setIsCreateModalOpen(true)} 
+                                                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                                                    >
+                                                        <PlusIcon />Create Your First Project
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
-                                    </ul>
+                                    </>
                                 )}
                             </div>
                         </div>
 
                         {/* Right Content Area */}
                         <div className="lg:col-span-3">
-                            <div className="mb-6 flex flex-wrap gap-4 items-center">
-                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={user?.role}>
+                            {/* Action buttons for selected project */}
+                            {selectedProject && (
+                                <div className="mb-6 flex flex-wrap gap-4 items-center">
                                     <button
-                                        onClick={() => setIsCreateModalOpen(true)}
-                                        className="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                                        onClick={handleNavigateToTasks}
+                                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
                                     >
-                                        <PlusIcon /> New Project
+                                        Manage Tasks
                                     </button>
-                                </RoleBasedComponent>
 
-                                <button
-                                    onClick={handleNavigateToTasks}
-                                    disabled={!selectedProject}
-                                    className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                >
-                                    Manage Tasks
-                                </button>
-
-                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={getUserRoleInProject(selectedProject)}>
-                                    <button
-                                        onClick={() => setIsMembersModalOpen(true)}
-                                        disabled={!selectedProject}
-                                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                    >
-                                        Manage Members
-                                    </button>
-                                </RoleBasedComponent>
-                            </div>
+                                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={getUserRoleInProject(selectedProject)}>
+                                        <button
+                                            onClick={() => setIsMembersModalOpen(true)}
+                                            className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                                        >
+                                            Manage Members
+                                        </button>
+                                    </RoleBasedComponent>
+                                </div>
+                            )}
                             
                             {loading.details ? (
                                 <div className="flex justify-center items-center h-64"><Spinner size="h-10 w-10" /></div>
@@ -453,11 +469,6 @@ const Dashboard = () => {
                                 <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
                                     <h3 className="text-xl font-semibold">Welcome to your Dashboard</h3>
                                     <p className="mt-2">{projects.length === 0 ? "You have no projects yet." : "Select a project from the left to view its details."}</p>
-                                    {canCreateProject() && projects.length === 0 && (
-                                        <button onClick={() => setIsCreateModalOpen(true)} className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                                            <PlusIcon />Create Your First Project
-                                        </button>
-                                    )}
                                 </div>
                             )}
                         </div>
