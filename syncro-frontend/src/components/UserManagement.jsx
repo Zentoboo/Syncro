@@ -9,16 +9,27 @@ const UserManagement = () => {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState({});
     const { canPromoteUser, canDeleteUser } = useRBAC();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        const timeout = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 300); // 300ms debounce
+        return () => clearTimeout(timeout);
+    }, [searchTerm]);
 
-    const fetchUsers = async () => {
+    useEffect(() => {
+        fetchUsers(debouncedSearch);
+    }, [debouncedSearch]);
+
+    const fetchUsers = async (search = '') => {
         try {
             setLoading(true);
-            // You'll need to create this endpoint in your backend
-            const response = await axios.get('/api/admin/users');
+            const response = await axios.get('/api/admin/users', {
+                params: { search }
+            });
             setUsers(response.data);
         } catch (error) {
             console.error('Error fetching users:', error);
@@ -107,6 +118,13 @@ const UserManagement = () => {
             <div className="bg-white shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
                     <h2 className="text-lg font-medium text-gray-900 mb-6">User Management</h2>
+                    <input
+                        type="text"
+                        placeholder="Search by username..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="border border-gray-300 rounded px-4 py-2 w-full md:w-1/3 mb-4"
+                    />
 
                     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                         <table className="min-w-full divide-y divide-gray-300">

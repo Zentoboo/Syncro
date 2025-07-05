@@ -31,25 +31,33 @@ namespace syncroAPI.Controllers
         }
 
         [HttpGet("users")]
-        public async Task<ActionResult<IEnumerable<UserSummaryResponse>>> GetAllUsers()
+        public async Task<ActionResult<IEnumerable<UserSummaryResponse>>> GetAllUsers([FromQuery] string? search = null)
         {
             // Only admins can view all users
             if (GetCurrentUserRole() != "Admin")
                 return Forbid("Only admins can access user management");
+            
+            var query = _context.Users
+            .Where(u => u.IsActive);
 
-            var users = await _context.Users
-                .Where(u => u.IsActive)
-                .Select(u => new UserSummaryResponse
-                {
-                    Id = u.Id,
-                    Username = u.Username,
-                    Email = u.Email,
-                    Role = u.Role,
-                    CreatedAt = u.CreatedAt,
-                    IsActive = u.IsActive
-                })
-                .OrderBy(u => u.Username)
-                .ToListAsync();
+            if (!string.IsNullOrWhiteSpace(search)) // <-- New: filter by search if provided
+            {
+                search = search.ToLower();
+                query = query.Where(u => u.Username.ToLower().StartsWith(search)); // <-- Match usernames starting with search term
+            }
+
+           var users = await query
+            .Select(u => new UserSummaryResponse
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Email = u.Email,
+                Role = u.Role,
+                CreatedAt = u.CreatedAt,
+                IsActive = u.IsActive
+            })
+            .OrderBy(u => u.Username)
+            .ToListAsync();
 
             return Ok(users);
         }
