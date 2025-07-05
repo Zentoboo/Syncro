@@ -231,7 +231,6 @@ const Dashboard = () => {
     const [projectDashboardData, setProjectDashboardData] = useState(null);
     const [loading, setLoading] = useState({ projects: true, details: false });
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
 
     const fetchProjects = useCallback(async () => {
@@ -424,7 +423,7 @@ const Dashboard = () => {
                             <div className="bg-white p-6 rounded-lg shadow">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-bold">My Projects</h2>
-                                    {/* NEW PROJECT BUTTON*/}
+                                    {/* NEW PROJECT BUTTON MOVED HERE */}
                                     <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={user?.role}>
                                         <button
                                             onClick={() => setIsCreateModalOpen(true)}
@@ -481,7 +480,7 @@ const Dashboard = () => {
 
                                     <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={getUserRoleInProject(selectedProject)}>
                                         <button
-                                            onClick={() => setIsMembersModalOpen(true)}
+                                            onClick={() => navigate(`/project/${selectedProject.id}/members`)}
                                             className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700"
                                         >
                                             Manage Members
@@ -520,7 +519,6 @@ const Dashboard = () => {
 
             {/* Modals */}
             <CreateProjectModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onCreate={handleCreateProject} />
-            <ProjectMembersModal isOpen={isMembersModalOpen} onClose={() => setIsMembersModalOpen(false)} project={selectedProject} onMemberUpdate={handleMemberUpdate} />
         </div>
     );
 };

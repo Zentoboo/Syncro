@@ -72,6 +72,11 @@ const Breadcrumb = () => {
                     label: 'Contributors',
                     href: null // Current page
                 });
+            } else if (pathSegments.includes('members')) {
+                breadcrumbs.push({
+                    label: 'Members',
+                    href: null // Current page
+                });
             } else if (pathSegments.includes('settings')) {
                 breadcrumbs.push({
                     label: 'Settings',
