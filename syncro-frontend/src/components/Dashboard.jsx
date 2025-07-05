@@ -53,7 +53,7 @@ const ProjectMembersModal = ({ isOpen, onClose, project, onMemberUpdate }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div className="fixed inset-0 backdrop-blur-sm z-50 flex justify-center items-center p-4">
             <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-6">Manage Project Members</h2>
                 <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRoleInProject}>
@@ -195,7 +195,7 @@ const CreateProjectModal = ({ isOpen, onClose, onCreate }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div className="fixed inset-0 backdrop-blur-sm z-50 flex justify-center items-center">
             <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
                 <h2 className="text-2xl font-bold mb-6">Create New Project</h2>
                 <form onSubmit={handleSubmit}>
