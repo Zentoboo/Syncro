@@ -103,13 +103,20 @@ const ProjectMembersModal = ({ isOpen, onClose, project, onMemberUpdate }) => {
 // --- Notification Component ---
 const NotificationBell = ({ user }) => {
     const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
     const fetchNotifications = useCallback(async () => {
         try {
-            const response = await axios.get('/api/notification');
-            setNotifications(response.data);
+            // Fetch recent notifications for display (limit to 10 for dropdown)
+            const notificationsResponse = await axios.get('/api/notification');
+            const recentNotifications = notificationsResponse.data.slice(0, 10);
+            setNotifications(recentNotifications);
+
+            // Calculate actual unread count from all notifications
+            const totalUnreadCount = notificationsResponse.data.filter(n => !n.isRead).length;
+            setUnreadCount(totalUnreadCount);
         } catch (error) {
             console.error("Failed to fetch notifications:", error);
         }
@@ -125,7 +132,14 @@ const NotificationBell = ({ user }) => {
         if (!notification.isRead) {
             try {
                 await axios.post(`/api/notification/${notification.id}/mark-as-read`);
-                fetchNotifications(); // Refresh list
+                // Update local state immediately
+                setNotifications(prev =>
+                    prev.map(n =>
+                        n.id === notification.id ? { ...n, isRead: true } : n
+                    )
+                );
+                // Decrease unread count
+                setUnreadCount(prev => Math.max(0, prev - 1));
             } catch (error) {
                 console.error("Failed to mark notification as read", error);
             }
@@ -136,8 +150,6 @@ const NotificationBell = ({ user }) => {
         setIsOpen(false);
     };
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
-
     return (
         <div className="relative">
             <button onClick={() => setIsOpen(!isOpen)} className="relative p-2 rounded-full hover:bg-gray-100">
@@ -146,23 +158,54 @@ const NotificationBell = ({ user }) => {
                 </svg>
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 block h-5 w-5 rounded-full ring-2 ring-white bg-red-500 text-white text-xs flex items-center justify-center">
-                        {unreadCount}
+                        {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
             </button>
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-20">
                     <div className="py-2">
-                        <div className="px-4 py-2 font-bold text-gray-800">Notifications</div>
+                        <div className="px-4 py-2 font-bold text-gray-800 flex items-center justify-between">
+                            <span>Notifications</span>
+                            {unreadCount > 0 && (
+                                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                                    {unreadCount} unread
+                                </span>
+                            )}
+                        </div>
                         <div className="max-h-96 overflow-y-auto">
                             {notifications.length > 0 ? notifications.map(n => (
-                                <div key={n.id} onClick={() => handleNotificationClick(n)} className={`px-4 py-3 border-b border-gray-100 cursor-pointer ${!n.isRead ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
-                                    <p className="text-sm text-gray-700">{n.message}</p>
-                                    <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                                <div
+                                    key={n.id}
+                                    onClick={() => handleNotificationClick(n)}
+                                    className={`px-4 py-3 border-b border-gray-100 cursor-pointer ${!n.isRead ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                                >
+                                    <div className="flex items-start">
+                                        {!n.isRead && (
+                                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                        )}
+                                        <div className="flex-1">
+                                            <p className="text-sm text-gray-700">{n.message}</p>
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                {new Date(n.createdAt).toLocaleString()} • {n.triggeredByUsername}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             )) : (
                                 <div className="px-4 py-3 text-sm text-gray-500">No new notifications.</div>
                             )}
+                        </div>
+                        <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+                            <button
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    navigate('/notifications');
+                                }}
+                                className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 hover:bg-blue-50 rounded transition-colors"
+                            >
+                                View All Notifications →
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -248,7 +291,7 @@ const Dashboard = () => {
     useEffect(() => {
         fetchProjects();
     }, [fetchProjects]);
-    
+
     const fetchProjectDetails = useCallback(async () => {
         if (selectedProject?.id) {
             setLoading(prev => ({ ...prev, details: true }));
@@ -294,17 +337,17 @@ const Dashboard = () => {
             fetchProjectDetails();
         }
     };
-    
+
     const getUserRoleInProject = (project) => project?.userRole || "Contributor";
 
     const handleNavigateToTasks = () => {
-        if(selectedProject) {
+        if (selectedProject) {
             navigate(`/project/${selectedProject.id}/tasks`);
         }
     };
 
     const handleViewAllContributors = () => {
-        if(selectedProject) {
+        if (selectedProject) {
             navigate(`/project/${selectedProject.id}/contributors`);
         }
     };
@@ -330,7 +373,7 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">Contributors</h3>
-                <button 
+                <button
                     onClick={onViewAll}
                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                 >
@@ -355,10 +398,10 @@ const Dashboard = () => {
                             </div>
                             <div className="text-xs text-gray-500">tasks done</div>
                             <div className="w-16 bg-gray-200 rounded-full h-1.5 mt-1">
-                                <div 
-                                    className="bg-green-500 h-1.5 rounded-full" 
-                                    style={{ 
-                                        width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` 
+                                <div
+                                    className="bg-green-500 h-1.5 rounded-full"
+                                    style={{
+                                        width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%`
                                     }}
                                 ></div>
                             </div>
@@ -397,11 +440,10 @@ const Dashboard = () => {
                         <div className="flex items-center space-x-4">
                             <NotificationBell user={user} />
                             <span className="text-sm text-gray-600">Welcome, {user?.username}</span>
-                            <span className={`font-medium px-2 py-1 rounded-full text-xs ${
-                                user?.role === 'Admin' ? 'bg-red-100 text-red-800' :
-                                user?.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
-                                'bg-green-100 text-green-800'
-                            }`}>
+                            <span className={`font-medium px-2 py-1 rounded-full text-xs ${user?.role === 'Admin' ? 'bg-red-100 text-red-800' :
+                                    user?.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-green-100 text-green-800'
+                                }`}>
                                 {user?.role}
                             </span>
                             <button onClick={logout} className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-md hover:bg-red-600">
@@ -452,8 +494,8 @@ const Dashboard = () => {
                                             <div className="text-center text-gray-500 py-8">
                                                 <p className="mb-4">No projects found.</p>
                                                 {canCreateProject() && (
-                                                    <button 
-                                                        onClick={() => setIsCreateModalOpen(true)} 
+                                                    <button
+                                                        onClick={() => setIsCreateModalOpen(true)}
                                                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                                                     >
                                                         <PlusIcon />Create Your First Project
@@ -488,7 +530,7 @@ const Dashboard = () => {
                                     </RoleBasedComponent>
                                 </div>
                             )}
-                            
+
                             {loading.details ? (
                                 <div className="flex justify-center items-center h-64"><Spinner size="h-10 w-10" /></div>
                             ) : selectedProject && projectDashboardData ? (

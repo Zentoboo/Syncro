@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -10,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import TasksApplication from './components/tasks-application';
 import Contributors from './components/Contributors';
 import ProjectMembers from './components/ProjectMembers';
+import NotificationsPage from './components/NotificationsPage';
 import Breadcrumb from './components/Breadcrumb';
 
 const Unauthorized = () => (
@@ -123,6 +123,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Notifications Page Route */}
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
                 </ProtectedRoute>
               }
             />
