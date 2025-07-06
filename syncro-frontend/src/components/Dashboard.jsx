@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRBAC } from '../hooks/useRBAC';
 import { RoleBasedComponent, AdminOnly } from './RBACComponents';
 import UserManagement from './UserManagement';
+import Calendar from './Calendar';
 import axios from 'axios';
 
 // --- Helper Components ---
@@ -275,6 +276,8 @@ const Dashboard = () => {
     const [loading, setLoading] = useState({ projects: true, details: false });
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [projectTasks, setProjectTasks] = useState([]);
+
 
     const fetchProjects = useCallback(async () => {
         setLoading(prev => ({ ...prev, projects: true }));
@@ -287,6 +290,25 @@ const Dashboard = () => {
             setLoading(prev => ({ ...prev, projects: false }));
         }
     }, []);
+
+    const fetchProjectTasks = useCallback(async () => {
+    if (!selectedProject?.id) {
+        setProjectTasks([]);
+        return;
+    }
+
+    try {
+        const response = await axios.get(`/api/task?projectId=${selectedProject.id}`);
+        setProjectTasks(response.data);
+    } catch (error) {
+        console.error("Error fetching project tasks:", error);
+        setProjectTasks([]);
+    }
+    }, [selectedProject?.id]);
+
+    useEffect(() => {
+    fetchProjectTasks();
+    }, [fetchProjectTasks]);
 
     useEffect(() => {
         fetchProjects();
@@ -547,6 +569,10 @@ const Dashboard = () => {
                                         <ProjectStatus data={projectDashboardData} />
                                         <Contributors members={projectDashboardData.tasksByMember} onViewAll={handleViewAllContributors} />
                                     </div>
+                                    <Calendar
+                                     selectedProject={selectedProject}
+                                     projectTasks={projectTasks}
+                                    />
                                 </div>
                             ) : (
                                 <div className="bg-white p-8 rounded-lg shadow text-center text-gray-500">
