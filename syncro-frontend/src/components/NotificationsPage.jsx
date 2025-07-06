@@ -63,6 +63,8 @@ const NotificationsPage = () => {
 
     useEffect(() => {
         fetchNotifications();
+        // Update page title for breadcrumb context
+        document.title = 'Notifications - Syncro';
     }, []);
 
     const handleNotificationClick = async (notification) => {

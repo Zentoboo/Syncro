@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useBreadcrumb } from '../contexts/BreadcrumbContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Simple SVG icons
 const ChevronRightIcon = () => (
@@ -10,16 +11,11 @@ const ChevronRightIcon = () => (
     </svg>
 );
 
-const HomeIcon = () => (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-);
-
 const Breadcrumb = () => {
     const location = useLocation();
     const params = useParams();
     const { getProjectName } = useBreadcrumb();
+    const { user } = useAuth();
     
     // Don't show breadcrumb on login/register pages
     if (['/login', '/register', '/unauthorized'].includes(location.pathname)) {
@@ -34,8 +30,7 @@ const Breadcrumb = () => {
         // Always start with Dashboard
         breadcrumbs.push({
             label: 'Dashboard',
-            href: '/dashboard',
-            icon: <HomeIcon />
+            href: '/dashboard'
         });
 
         // Handle different page types
@@ -43,6 +38,18 @@ const Breadcrumb = () => {
             breadcrumbs.push({
                 label: 'Admin Panel',
                 href: null // Current page
+            });
+        }
+
+        // Handle notifications page
+        if (pathSegments.includes('notifications')) {
+            breadcrumbs.push({
+                label: user?.username || 'User',
+                href: null
+            });
+            breadcrumbs.push({
+                label: 'Notifications',
+                href: null
             });
         }
 
@@ -106,14 +113,12 @@ const Breadcrumb = () => {
                             {breadcrumb.href ? (
                                 <Link 
                                     to={breadcrumb.href} 
-                                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                                    className="hover:text-blue-600 transition-colors"
                                 >
-                                    {breadcrumb.icon}
                                     <span>{breadcrumb.label}</span>
                                 </Link>
                             ) : (
-                                <span className="flex items-center space-x-1 text-gray-900 font-medium">
-                                    {breadcrumb.icon}
+                                <span className="text-gray-900 font-medium">
                                     <span>{breadcrumb.label}</span>
                                 </span>
                             )}
