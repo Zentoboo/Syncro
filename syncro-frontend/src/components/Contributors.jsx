@@ -100,10 +100,10 @@ const Contributors = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                             <Link 
-                                to={`/project/${projectId}/tasks`} 
+                                to="/dashboard" 
                                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
                             >
-                                Back to Tasks
+                                Back to Dashboard
                             </Link>
                         </div>
                     </div>
