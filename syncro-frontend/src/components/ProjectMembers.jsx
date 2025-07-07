@@ -1,4 +1,3 @@
-// zentoboo/syncro/Syncro-bc266b2d3b44722e8ff4501783c8d62f150e59ee/syncro-frontend/src/components/ProjectMembers.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -40,7 +39,7 @@ const XIcon = () => (
     </svg>
 );
 
-// Enhanced User Search Component
+// Enhanced User Search Component with Role-based filtering
 const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -48,6 +47,62 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
     const [selectedRole, setSelectedRole] = useState('Contributor');
     const [error, setError] = useState('');
     const [showResults, setShowResults] = useState(false);
+
+    // Stable search function
+    const searchUsers = useCallback(async () => {
+        if (searchTerm.length < 2) return;
+        
+        setLoading(true);
+        setError('');
+
+        try {
+            const response = await axios.get(`/api/project/search-users?q=${encodeURIComponent(searchTerm)}`);
+
+            // Filter out users who are already members
+            const currentMemberIds = currentMembers.map(m => m.user.id);
+            let filteredResults = response.data.filter(user => !currentMemberIds.includes(user.id));
+
+            // ROLE-BASED FILTERING: Only show users whose global role matches selected project role
+            // EXCLUDE ADMINS: Admins cannot be invited to projects
+            filteredResults = filteredResults.filter(user => {
+                // Never show Admins in search results
+                if (user.role === 'Admin') {
+                    return false;
+                }
+                
+                // Only show users whose global role exactly matches the selected project role
+                if (selectedRole === 'Contributor') {
+                    return user.role === 'Contributor';
+                } else if (selectedRole === 'ProjectManager') {
+                    return user.role === 'ProjectManager';
+                }
+                return false;
+            });
+
+            setSearchResults(filteredResults);
+            setShowResults(true);
+
+            if (filteredResults.length === 0 && response.data.length > 0) {
+                const roleMessage = selectedRole === 'Contributor' 
+                    ? 'No Contributors found' 
+                    : 'No Project Managers found';
+                setError(roleMessage + ' (Admins cannot be invited to projects)');
+            }
+        } catch (error) {
+            console.error('Error searching users:', error);
+            if (error.response?.status === 403) {
+                setError('You do not have permission to search for users');
+            } else if (error.response?.status === 400) {
+                setError('Search query must be at least 2 characters long');
+            } else {
+                setError('Failed to search users. Please try again.');
+            }
+            setSearchResults([]);
+            setShowResults(false);
+        } finally {
+            setLoading(false);
+        }
+    }, [searchTerm, selectedRole, currentMembers]);
 
     // Debounced search effect
     useEffect(() => {
@@ -63,60 +118,17 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
         }, 300);
 
         return () => clearTimeout(delayedSearch);
-    }, [searchTerm]); // Only depend on searchTerm
-
-    const searchUsers = async () => {
-        setLoading(true);
-        setError('');
-
-        try {
-            console.log('Searching for users with term:', searchTerm);
-
-            const response = await axios.get(`/api/project/search-users?q=${encodeURIComponent(searchTerm)}`);
-
-            console.log('Search response:', response.data);
-
-            // Filter out users who are already members
-            const currentMemberIds = currentMembers.map(m => m.user.id);
-            const filteredResults = response.data.filter(user => !currentMemberIds.includes(user.id));
-
-            setSearchResults(filteredResults);
-            setShowResults(true);
-
-            if (filteredResults.length === 0 && response.data.length > 0) {
-                setError('All matching users are already project members');
-            }
-        } catch (error) {
-            console.error('Error searching users:', error);
-
-            if (error.response?.status === 403) {
-                setError('You do not have permission to search for users');
-            } else if (error.response?.status === 400) {
-                setError('Search query must be at least 2 characters long');
-            } else {
-                setError('Failed to search users. Please try again.');
-            }
-
-            setSearchResults([]);
-            setShowResults(false);
-        } finally {
-            setLoading(false);
-        }
-    };
+    }, [searchUsers]);
 
     const handleAddUser = async (user) => {
         try {
-            console.log('Adding user:', user, 'with role:', selectedRole);
-
             setLoading(true);
             await onAddMember(user.username, selectedRole);
-
             // Clear search after successful addition
             setSearchTerm('');
             setSearchResults([]);
             setShowResults(false);
             setError('');
-
         } catch (error) {
             console.error('Error adding member:', error);
             setError('Failed to add member. Please try again.');
@@ -129,9 +141,17 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
         const value = e.target.value;
         setSearchTerm(value);
         setError('');
-
         if (value.length < 2) {
             setShowResults(false);
+        }
+    };
+
+    const handleRoleChange = (e) => {
+        setSelectedRole(e.target.value);
+        setError('');
+        // Clear results when role changes - new search will be triggered by useEffect
+        if (searchTerm.length >= 2) {
+            setSearchResults([]);
         }
     };
 
@@ -142,7 +162,6 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
     };
 
     const handleInputBlur = () => {
-        // Delay hiding results to allow clicking on them
         setTimeout(() => setShowResults(false), 200);
     };
 
@@ -176,7 +195,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
                             onChange={handleInputChange}
                             onFocus={handleInputFocus}
                             onBlur={handleInputBlur}
-                            placeholder="Search users by username or email..."
+                            placeholder={`Search for ${selectedRole === 'Contributor' ? 'Contributors' : 'Project Managers'}...`}
                             className="block w-full pl-10 pr-10 py-2 border border-slate-600 rounded-md leading-5 bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         />
                         {loading && (
@@ -188,12 +207,20 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
 
                     <select
                         value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
+                        onChange={handleRoleChange}
                         className="px-3 py-2 border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-700 text-white min-w-[150px]"
                     >
                         <option value="Contributor">Contributor</option>
                         <option value="ProjectManager">Project Manager</option>
                     </select>
+                </div>
+
+                {/* Role Info */}
+                <div className="p-3 bg-indigo-900 bg-opacity-30 border border-indigo-700 rounded-md">
+                    <p className="text-sm text-indigo-300">
+                        Only showing {selectedRole === 'Contributor' ? 'Contributors' : 'Project Managers'}. 
+                        Admins cannot be invited to projects.
+                    </p>
                 </div>
 
                 {/* Error Message */}
@@ -206,10 +233,7 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
 
                 {/* Search Instructions */}
                 {searchTerm.length > 0 && searchTerm.length < 2 && (
-                    <div className="p-3 bg-indigo-900 bg-opacity-50 border border-indigo-700 rounded-md flex items-start space-x-2">
-                        <svg className="h-4 w-4 text-indigo-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    <div className="p-3 bg-indigo-900 bg-opacity-50 border border-indigo-700 rounded-md">
                         <p className="text-sm text-indigo-300">Type at least 2 characters to search for users</p>
                     </div>
                 )}
@@ -233,7 +257,14 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
                                             <div>
                                                 <p className="text-sm font-medium text-white">{user.username}</p>
                                                 <p className="text-sm text-slate-400">{user.email}</p>
-                                                <p className="text-xs text-slate-500">Global role: {user.role}</p>
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                                        user.role === 'ProjectManager' ? 'bg-indigo-900 text-indigo-200' : 'bg-green-900 text-green-200'
+                                                    }`}>
+                                                        Global: {user.role}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500">→ Project: {selectedRole}</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <button
@@ -252,13 +283,10 @@ const UserSearch = ({ onAddMember, currentMembers, disabled = false }) => {
                                     <UserIcon />
                                 </div>
                                 <p className="text-sm font-medium text-white mb-1">
-                                    No users found
+                                    No {selectedRole === 'Contributor' ? 'Contributors' : 'Project Managers'} found
                                 </p>
-                                <p className="text-sm text-slate-400 mb-1">
-                                    No users match "{searchTerm}"
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                    Try searching with a different username or email
+                                <p className="text-sm text-slate-400">
+                                    No users with "{selectedRole === 'Contributor' ? 'Contributor' : 'ProjectManager'}" role match "{searchTerm}"
                                 </p>
                             </div>
                         )}
@@ -274,7 +302,6 @@ const MemberCard = ({ member, isOwner, currentUser, userRole, onRemoveMember, on
     const [isUpdatingRole, setIsUpdatingRole] = useState(false);
     const isSelf = member.user.id === currentUser.id;
 
-    // Updated permission logic - Project owner can kick anyone except themselves
     const canRemove = (userRole === 'Admin' && !isSelf) || (isCurrentUserProjectOwner && !isSelf);
     const canChangeRole = userRole === 'Admin' && !isSelf;
 
@@ -345,7 +372,7 @@ const MemberCard = ({ member, isOwner, currentUser, userRole, onRemoveMember, on
                             >
                                 <option value="Contributor">Contributor</option>
                                 <option value="ProjectManager">Project Manager</option>
-                                <option value="Admin">Admin</option>
+                                {/* Removed Admin option - Admins cannot be project members */}
                             </select>
                             {isUpdatingRole && (
                                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -363,7 +390,7 @@ const MemberCard = ({ member, isOwner, currentUser, userRole, onRemoveMember, on
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 0v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
-                            <span>{isCurrentUserProjectOwner ? 'Kick from Project' : 'Remove'}</span>
+                            <span>{isCurrentUserProjectOwner ? 'Kick' : 'Remove'}</span>
                         </button>
                     )}
                 </div>
@@ -387,19 +414,6 @@ const ProjectMembers = () => {
     const isProjectOwner = project?.createdBy?.id === user.id;
     const canManageMembers = userRoleInProject === 'Admin' || userRoleInProject === 'ProjectManager' || isProjectOwner;
 
-    // Debug logging
-    useEffect(() => {
-        if (project && user) {
-            console.log('Project Members Debug Info:');
-            console.log('- Current User ID:', user.id);
-            console.log('- Project Creator ID:', project.createdBy?.id);
-            console.log('- Is Project Owner:', isProjectOwner);
-            console.log('- User Role in Project:', userRoleInProject);
-            console.log('- Can Manage Members:', canManageMembers);
-            console.log('- Project Members:', members.map(m => ({ id: m.id, userId: m.user.id, username: m.user.username, role: m.role })));
-        }
-    }, [project, user, members, userRoleInProject, isProjectOwner, canManageMembers]);
-
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError('');
@@ -407,8 +421,6 @@ const ProjectMembers = () => {
             const response = await axios.get(`/api/project/${projectId}`);
             setProject(response.data);
             setMembers(response.data.members || []);
-
-            // Update breadcrumb context
             updateProjectInfo(projectId, response.data.name);
         } catch (err) {
             setError('Failed to fetch project data. You may not have access to this project.');
@@ -416,11 +428,11 @@ const ProjectMembers = () => {
         } finally {
             setLoading(false);
         }
-    }, [projectId]); 
+    }, [projectId]); // Removed updateProjectInfo to prevent infinite loops
 
     useEffect(() => {
         fetchData();
-    }, [projectId]); 
+    }, [projectId]); // Only depend on projectId
 
     // Clear success message after 5 seconds
     useEffect(() => {
@@ -452,29 +464,18 @@ const ProjectMembers = () => {
 
         if (window.confirm(kickMessage)) {
             try {
-                console.log('Attempting to remove member:', { memberId, username, projectId });
-                console.log('Current user role:', userRoleInProject, 'Is project owner:', isProjectOwner);
-
-                const response = await axios.delete(`/api/project/${projectId}/members/${memberId}`);
-                console.log('Remove member response:', response);
-
+                await axios.delete(`/api/project/${projectId}/members/${memberId}`);
                 const refreshResponse = await axios.get(`/api/project/${projectId}`);
                 setProject(refreshResponse.data);
                 setMembers(refreshResponse.data.members || []);
-
                 const successMessage = isProjectOwner
                     ? `${username} has been kicked from the project`
                     : `${username} has been removed from the project`;
                 setSuccessMessage(successMessage);
-
                 setError('');
             } catch (error) {
                 console.error('Error removing member:', error);
-                console.error('Error response:', error.response?.data);
-                console.error('Error status:', error.response?.status);
-
                 let errorMessage = 'Failed to remove member';
-
                 if (error.response?.status === 403) {
                     errorMessage = 'You do not have permission to remove this member';
                 } else if (error.response?.status === 404) {
@@ -484,7 +485,6 @@ const ProjectMembers = () => {
                 } else if (error.response?.data) {
                     errorMessage = error.response.data;
                 }
-
                 setError(errorMessage);
                 setTimeout(() => setError(''), 5000);
             }
@@ -618,7 +618,7 @@ const ProjectMembers = () => {
                                 .sort((a, b) => {
                                     if (a.user.id === project.createdBy?.id) return -1;
                                     if (b.user.id === project.createdBy?.id) return 1;
-                                    const roleOrder = { 'Admin': 0, 'ProjectManager': 1, 'Contributor': 2 };
+                                    const roleOrder = { 'ProjectManager': 0, 'Contributor': 1 };
                                     if (roleOrder[a.role] !== roleOrder[b.role]) {
                                         return roleOrder[a.role] - roleOrder[b.role];
                                     }
@@ -649,16 +649,12 @@ const ProjectMembers = () => {
                         Permission Information
                     </h3>
                     <div className="text-sm text-slate-300 space-y-2">
-                        <div className="flex items-start space-x-2">
-                            <CrownIcon />
-                            <p><strong>Project Owner:</strong> Can manage all members, kick users from the project, and has full project control</p>
-                        </div>
-                        <p><strong>Admin:</strong> Can add/remove members, change roles, and manage all project aspects</p>
+                        <p><strong>Project Owner:</strong> Can manage all members, kick users from the project, and has full project control</p>
                         <p><strong>Project Manager:</strong> Can add members, create/assign tasks, and manage project workflow</p>
                         <p><strong>Contributor:</strong> Can work on assigned tasks and participate in project activities</p>
                         <div className="mt-3 p-3 bg-slate-700 rounded-md">
                             <p className="text-xs text-slate-400">
-                                <strong>Note:</strong> When a user is kicked or removed from a project, their past contributions (completed tasks, comments, and uploaded files) remain in the project for continuity.
+                                <strong>Note:</strong> Admins cannot be invited to projects. Only Contributors and Project Managers can be added as project members.
                             </p>
                         </div>
                     </div>
@@ -688,9 +684,9 @@ const ProjectMembers = () => {
                             </div>
                             <div className="ml-4">
                                 <h4 className="text-lg font-semibold text-white">
-                                    {members.filter(m => m.role === 'Admin' || m.role === 'ProjectManager').length}
+                                    {members.filter(m => m.role === 'ProjectManager').length}
                                 </h4>
-                                <p className="text-sm text-slate-400">Managers</p>
+                                <p className="text-sm text-slate-400">Project Managers</p>
                             </div>
                         </div>
                     </div>
