@@ -1,4 +1,4 @@
-// src/components/Contributors.jsx - Simple test version
+// zentoboo/syncro/Syncro-bc266b2d3b44722e8ff4501783c8d62f150e59ee/syncro-frontend/src/components/Contributors.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -46,10 +46,10 @@ const Contributors = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading contributors...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-400 mx-auto"></div>
+                    <p className="mt-4 text-slate-400">Loading contributors...</p>
                 </div>
             </div>
         );
@@ -57,13 +57,13 @@ const Contributors = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="text-red-500 text-lg mb-4">Error</div>
-                    <p className="text-gray-600">{error}</p>
+                    <div className="text-red-400 text-lg mb-4">Error</div>
+                    <p className="text-slate-400">{error}</p>
                     <Link 
                         to="/dashboard" 
-                        className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                     >
                         Back to Dashboard
                     </Link>
@@ -74,12 +74,12 @@ const Contributors = () => {
 
     if (!project) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-gray-600">Project not found.</p>
+                    <p className="text-slate-400">Project not found.</p>
                     <Link 
                         to="/dashboard" 
-                        className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                     >
                         Back to Dashboard
                     </Link>
@@ -89,19 +89,18 @@ const Contributors = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm">
+        <div className="min-h-screen bg-slate-900 text-white">
+            <header className="bg-slate-800 shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Project Contributors</h1>
-                            <p className="text-gray-600 mt-1">{project.description}</p>
+                            <h1 className="text-3xl font-bold text-white">Project Contributors</h1>
+                            <p className="text-slate-400 mt-1">{project.description}</p>
                         </div>
                         <div className="flex items-center space-x-4">
                             <Link 
                                 to="/dashboard" 
-                                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
                             >
                                 Back to Dashboard
                             </Link>
@@ -110,27 +109,26 @@ const Contributors = () => {
                 </div>
             </header>
 
-            {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Contributors ({contributors.length})</h2>
+                <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
+                    <h2 className="text-xl font-semibold text-white mb-4">Contributors ({contributors.length})</h2>
                     
                     {contributors.length === 0 ? (
                         <div className="text-center py-12">
-                            <div className="text-gray-400 text-lg mb-2">No contributors found</div>
-                            <p className="text-gray-500">Tasks haven't been assigned to team members yet.</p>
+                            <div className="text-slate-500 text-lg mb-2">No contributors found</div>
+                            <p className="text-slate-400">Tasks haven't been assigned to team members yet.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {contributors.map((member) => (
-                                <div key={member.user.id} className="bg-gray-50 rounded-lg p-4">
+                                <div key={member.user.id} className="bg-slate-700 rounded-lg p-4">
                                     <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+                                        <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium">
                                             {member.user.username.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
-                                            <h3 className="font-medium text-gray-900">{member.user.username}</h3>
-                                            <p className="text-sm text-gray-500">{member.user.email}</p>
+                                            <h3 className="font-medium text-white">{member.user.username}</h3>
+                                            <p className="text-sm text-slate-400">{member.user.email}</p>
                                         </div>
                                     </div>
                                     
@@ -139,7 +137,7 @@ const Contributors = () => {
                                             <span>Tasks: {member.completedTasks}/{member.totalTasks}</span>
                                             <span>{member.totalTasks > 0 ? Math.round((member.completedTasks / member.totalTasks) * 100) : 0}%</span>
                                         </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                        <div className="w-full bg-slate-600 rounded-full h-2 mt-1">
                                             <div 
                                                 className="bg-green-500 h-2 rounded-full" 
                                                 style={{ 
@@ -150,13 +148,13 @@ const Contributors = () => {
                                     </div>
                                     
                                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                                        <div className="text-center p-2 bg-blue-50 rounded">
-                                            <div className="font-medium text-blue-600">{member.inProgressTasks}</div>
-                                            <div className="text-gray-500">In Progress</div>
+                                        <div className="text-center p-2 bg-indigo-900/50 rounded">
+                                            <div className="font-medium text-indigo-300">{member.inProgressTasks}</div>
+                                            <div className="text-slate-400">In Progress</div>
                                         </div>
-                                        <div className="text-center p-2 bg-gray-100 rounded">
-                                            <div className="font-medium text-gray-600">{member.todoTasks}</div>
-                                            <div className="text-gray-500">To Do</div>
+                                        <div className="text-center p-2 bg-slate-600 rounded">
+                                            <div className="font-medium text-slate-300">{member.todoTasks}</div>
+                                            <div className="text-slate-400">To Do</div>
                                         </div>
                                     </div>
                                 </div>

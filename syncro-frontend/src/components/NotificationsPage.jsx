@@ -1,4 +1,4 @@
-// src/components/NotificationsPage.jsx
+// zentoboo/syncro/Syncro-bc266b2d3b44722e8ff4501783c8d62f150e59ee/syncro-frontend/src/components/NotificationsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -37,7 +37,7 @@ const FilterIcon = () => (
 );
 
 const Spinner = ({ size = 'h-5 w-5' }) => (
-    <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-blue-500`}></div>
+    <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-indigo-400`}></div>
 );
 
 const NotificationsPage = () => {
@@ -198,28 +198,28 @@ const NotificationsPage = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
                 <div className="text-center">
                     <Spinner size="h-12 w-12" />
-                    <p className="mt-4 text-gray-600">Loading notifications...</p>
+                    <p className="mt-4 text-slate-400">Loading notifications...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-900 text-white">
             {/* Header */}
-            <header className="bg-white shadow-sm">
+            <header className="bg-slate-800 shadow-lg">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-indigo-900 rounded-lg flex items-center justify-center">
                                 <BellIcon />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-                                <p className="text-gray-600 mt-1">
+                                <h1 className="text-3xl font-bold text-white">Notifications</h1>
+                                <p className="text-slate-400 mt-1">
                                     Manage your notifications • {unreadCount} unread
                                 </p>
                             </div>
@@ -227,7 +227,7 @@ const NotificationsPage = () => {
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={() => navigate('/dashboard')}
-                                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
                             >
                                 Back to Dashboard
                             </button>
@@ -239,13 +239,13 @@ const NotificationsPage = () => {
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {/* Filters and Actions */}
-                <div className="bg-white rounded-lg shadow mb-6 p-6">
+                <div className="bg-slate-800 rounded-lg shadow-lg mb-6 p-6 border border-slate-700">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                         {/* Filters */}
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2">
                                 <FilterIcon />
-                                <span className="text-sm font-medium text-gray-700">Filter:</span>
+                                <span className="text-sm font-medium text-slate-300">Filter:</span>
                             </div>
                             <div className="flex space-x-1">
                                 {['all', 'unread', 'read'].map((filterType) => (
@@ -254,8 +254,8 @@ const NotificationsPage = () => {
                                         onClick={() => setFilter(filterType)}
                                         className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                                             filter === filterType
-                                                ? 'bg-blue-100 text-blue-700'
-                                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'text-slate-400 hover:text-white hover:bg-slate-700'
                                         }`}
                                     >
                                         {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
@@ -272,13 +272,13 @@ const NotificationsPage = () => {
                         {/* Bulk Actions */}
                         {selectedNotifications.size > 0 && (
                             <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-600">
+                                <span className="text-sm text-slate-400">
                                     {selectedNotifications.size} selected
                                 </span>
                                 <button
                                     onClick={handleBulkMarkAsRead}
                                     disabled={bulkLoading}
-                                    className="inline-flex items-center px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 disabled:opacity-50"
+                                    className="inline-flex items-center px-3 py-1 text-sm bg-green-900 text-green-300 rounded-md hover:bg-green-800 disabled:opacity-50"
                                 >
                                     <CheckIcon />
                                     <span className="ml-1">Mark Read</span>
@@ -286,7 +286,7 @@ const NotificationsPage = () => {
                                 <button
                                     onClick={handleBulkDelete}
                                     disabled={bulkLoading}
-                                    className="inline-flex items-center px-3 py-1 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 disabled:opacity-50"
+                                    className="inline-flex items-center px-3 py-1 text-sm bg-red-900 text-red-300 rounded-md hover:bg-red-800 disabled:opacity-50"
                                 >
                                     <TrashIcon />
                                     <span className="ml-1">Delete</span>
@@ -297,10 +297,10 @@ const NotificationsPage = () => {
 
                     {/* Select All */}
                     {filteredNotifications.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="mt-4 pt-4 border-t border-slate-700">
                             <button
                                 onClick={handleSelectAll}
-                                className="text-sm text-blue-600 hover:text-blue-800"
+                                className="text-sm text-indigo-400 hover:text-indigo-300"
                             >
                                 {selectedNotifications.size === filteredNotifications.length ? 'Deselect All' : 'Select All'}
                             </button>
@@ -311,15 +311,15 @@ const NotificationsPage = () => {
                 {/* Notifications List */}
                 <div className="space-y-4">
                     {filteredNotifications.length === 0 ? (
-                        <div className="bg-white rounded-lg shadow p-12 text-center">
-                            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-gray-100">
+                        <div className="bg-slate-800 rounded-lg shadow-lg p-12 text-center border border-slate-700">
+                            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-slate-700">
                                 <BellIcon />
                             </div>
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            <h3 className="text-lg font-medium text-white mb-2">
                                 {filter === 'unread' ? 'No unread notifications' : 
                                  filter === 'read' ? 'No read notifications' : 'No notifications'}
                             </h3>
-                            <p className="text-gray-500 mb-4">
+                            <p className="text-slate-400 mb-4">
                                 {filter === 'all' ? "You're all caught up! New notifications will appear here." :
                                  filter === 'unread' ? "All notifications have been read." :
                                  "You haven't read any notifications yet."}
@@ -329,8 +329,8 @@ const NotificationsPage = () => {
                         filteredNotifications.map((notification) => (
                             <div
                                 key={notification.id}
-                                className={`bg-white rounded-lg shadow transition-all duration-200 hover:shadow-md ${
-                                    !notification.isRead ? 'ring-2 ring-blue-100' : ''
+                                className={`bg-slate-800 rounded-lg shadow-lg transition-all duration-200 hover:shadow-indigo-500/10 ${
+                                    !notification.isRead ? 'ring-2 ring-indigo-500' : 'border border-slate-700'
                                 }`}
                             >
                                 <div className="p-6">
@@ -340,15 +340,15 @@ const NotificationsPage = () => {
                                             type="checkbox"
                                             checked={selectedNotifications.has(notification.id)}
                                             onChange={() => handleSelectNotification(notification.id)}
-                                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-600 rounded bg-slate-700"
                                         />
 
                                         {/* Status Indicator */}
                                         <div className="flex-shrink-0 mt-1">
                                             {!notification.isRead ? (
-                                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                                <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
                                             ) : (
-                                                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                                                <div className="w-3 h-3 bg-slate-600 rounded-full"></div>
                                             )}
                                         </div>
 
@@ -358,10 +358,10 @@ const NotificationsPage = () => {
                                             onClick={() => handleNotificationClick(notification)}
                                         >
                                             <div className="flex items-center justify-between">
-                                                <p className={`text-sm ${!notification.isRead ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
+                                                <p className={`text-sm ${!notification.isRead ? 'font-medium text-white' : 'text-slate-300'}`}>
                                                     {notification.message}
                                                 </p>
-                                                <time className="text-xs text-gray-500">
+                                                <time className="text-xs text-slate-500">
                                                     {new Date(notification.createdAt).toLocaleDateString()} at{' '}
                                                     {new Date(notification.createdAt).toLocaleTimeString([], { 
                                                         hour: '2-digit', 
@@ -370,15 +370,15 @@ const NotificationsPage = () => {
                                                 </time>
                                             </div>
                                             
-                                            <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+                                            <div className="mt-2 flex items-center space-x-4 text-xs text-slate-400">
                                                 <span>From: {notification.triggeredByUsername}</span>
                                                 {notification.projectId && (
-                                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                                    <span className="px-2 py-1 bg-indigo-900 text-indigo-300 rounded-full">
                                                         Project Related
                                                     </span>
                                                 )}
                                                 {!notification.isRead && (
-                                                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                                                    <span className="px-2 py-1 bg-red-900 text-red-300 rounded-full">
                                                         Unread
                                                     </span>
                                                 )}
@@ -393,7 +393,7 @@ const NotificationsPage = () => {
                                                         e.stopPropagation();
                                                         handleMarkAsRead(notification.id);
                                                     }}
-                                                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                                                    className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-900/50 rounded-md transition-colors"
                                                     title="Mark as read"
                                                 >
                                                     <EyeIcon />
@@ -404,7 +404,7 @@ const NotificationsPage = () => {
                                                     e.stopPropagation();
                                                     handleDeleteNotification(notification.id);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/50 rounded-md transition-colors"
                                                 title="Delete notification"
                                             >
                                                 <TrashIcon />
@@ -420,7 +420,7 @@ const NotificationsPage = () => {
                 {/* Load More / Pagination placeholder */}
                 {filteredNotifications.length > 0 && (
                     <div className="mt-8 text-center">
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-slate-500">
                             Showing {filteredNotifications.length} of {notifications.length} notifications
                         </p>
                     </div>
