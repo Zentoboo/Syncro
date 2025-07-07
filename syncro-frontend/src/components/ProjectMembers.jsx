@@ -566,6 +566,14 @@ const ProjectMembers = () => {
                                 Manage team members and their permissions
                             </p>
                         </div>
+                        <div className="flex items-center space-x-4">
+                            <Link
+                                to="/dashboard"
+                                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
+                            >
+                                Back to Dashboard
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </header>
