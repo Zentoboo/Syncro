@@ -177,6 +177,24 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+            {/* Project Members Management Route */}
+            <Route
+              path="/project/:projectId/members"
+              element={
+                <ProtectedRoute>
+                  <ProjectMembers />
+                </ProtectedRoute>
+              }
+            />
+            {/* About routes */}
+            <Route
+              path="/about"
+              element={
+              <ProtectedRoute>
+                <About />
+              </ProtectedRoute>
+              }
+            />
 
               {/* Admin only route */}
               <Route
