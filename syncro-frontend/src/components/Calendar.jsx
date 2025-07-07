@@ -7,6 +7,14 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
     // Debug Log
     console.log('Calendar component received projectTasks:', projectTasks);
 
+    // Consistent priority styles matching the tasks page
+    const priorityStyles = {
+        0: { text: 'Low', bg: 'bg-gray-700', textColor: 'text-gray-200', borderColor: 'border-gray-600' },
+        1: { text: 'Medium', bg: 'bg-blue-900', textColor: 'text-blue-200', borderColor: 'border-blue-700' },
+        2: { text: 'High', bg: 'bg-yellow-900', textColor: 'text-yellow-200', borderColor: 'border-yellow-700' },
+        3: { text: 'Critical', bg: 'bg-red-900', textColor: 'text-red-200', borderColor: 'border-red-700' }
+    };
+
     // Get all dates in the current month
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
@@ -113,23 +121,16 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
 
     // Get the task priority color
     const getPriorityColor = (priority) => {
-        // priority是数字：Low=0, Medium=1, High=2, Critical=3
-        switch (priority) {
-            case 3: return 'bg-purple-500'; // Critical
-            case 2: return 'bg-red-500';    // High
-            case 1: return 'bg-yellow-500'; // Medium
-            case 0: return 'bg-green-500';  // Low
-            default: return 'bg-gray-500';
-        }
+        return priorityStyles[priority]?.bg || 'bg-slate-600';
     };
 
     const getPriorityColorHex = (priority) => {
         switch (priority) {
-            case 3: return '#8b5cf6'; // purple-500
-            case 2: return '#ef4444'; // red-500
-            case 1: return '#eab308'; // yellow-500
-            case 0: return '#22c55e'; // green-500
-            default: return '#6b7280'; // gray-500
+            case 3: return '#7f1d1d'; // red-900
+            case 2: return '#713f12'; // yellow-900
+            case 1: return '#1e3a8a'; // blue-900
+            case 0: return '#374151'; // gray-700
+            default: return '#475569'; // slate-600
         }
     };
 
@@ -143,13 +144,13 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
     const weekDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
             {/* Calendar Header */}
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center space-x-4">
                     <button
                         onClick={goToPreviousMonth}
-                        className="p-2 hover:bg-gray-100 rounded-md"
+                        className="p-2 hover:bg-slate-700 rounded-md text-slate-300 hover:text-white transition-colors"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -157,7 +158,7 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                     </button>
                     <button
                         onClick={goToNextMonth}
-                        className="p-2 hover:bg-gray-100 rounded-md"
+                        className="p-2 hover:bg-slate-700 rounded-md text-slate-300 hover:text-white transition-colors"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -165,13 +166,13 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                     </button>
                     <button
                         onClick={goToToday}
-                        className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                        className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
                     >
                         Today
                     </button>
                 </div>
 
-                <h2 className="text-xl font-bold text-gray-800">
+                <h2 className="text-xl font-bold text-white">
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </h2>
 
@@ -180,10 +181,10 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                         <button
                             key={mode}
                             onClick={() => setViewMode(mode)}
-                            className={`px-3 py-1 text-sm rounded-md ${
+                            className={`px-3 py-1 text-sm rounded-md transition-colors ${
                                 viewMode === mode
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
                             }`}
                         >
                             {mode}
@@ -198,7 +199,7 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                     {/* Weekly Title */}
                     <div className="grid grid-cols-7 gap-1 mb-2">
                         {weekDayNames.map((day) => (
-                            <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
+                            <div key={day} className="p-2 text-center text-sm font-medium text-slate-400">
                                 {day}
                             </div>
                         ))}
@@ -214,12 +215,15 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                                 <div
                                     key={index}
                                     className={`
-                                        min-h-[80px] p-2 border border-gray-200 cursor-pointer hover:bg-gray-50
-                                        ${!day.isCurrentMonth ? 'bg-gray-100 text-gray-400' : 'bg-white'}
-                                        ${isCurrentDay ? 'bg-blue-100 border-blue-500' : ''}
+                                        min-h-[80px] p-2 border rounded-md cursor-pointer hover:bg-slate-700 transition-colors
+                                        ${!day.isCurrentMonth 
+                                            ? 'bg-slate-900 border-slate-600 text-slate-500' 
+                                            : 'bg-slate-800 border-slate-600 text-slate-200'
+                                        }
+                                        ${isCurrentDay ? 'bg-indigo-900 border-indigo-500 text-indigo-200' : ''}
                                     `}
                                 >
-                                    <div className={`text-sm font-medium ${isCurrentDay ? 'text-blue-700' : ''}`}>
+                                    <div className={`text-sm font-medium ${isCurrentDay ? 'text-indigo-300' : ''}`}>
                                         {day.date}
                                     </div>
 
@@ -229,13 +233,13 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                                             <div
                                                 key={taskIndex}
                                                 className={`text-xs px-1 py-0.5 rounded text-white truncate ${getPriorityColor(task.priority)}`}
-                                                                title={`${task.title}\nDue Date: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US') : 'None'}\nPriority: ${['Low', 'Medium', 'High', 'Critical'][task.priority]}`}
+                                                title={`${task.title}\nDue Date: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US') : 'None'}\nPriority: ${priorityStyles[task.priority]?.text || 'Unknown'}`}
                                             >
                                                 {task.title}
                                             </div>
                                         ))}
                                         {dayTasks.length > 3 && (
-                                            <div className="text-xs text-gray-500">
+                                            <div className="text-xs text-slate-400">
                                                 +{dayTasks.length - 3} more
                                             </div>
                                         )}
@@ -252,7 +256,7 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                 <>
                     <div className="grid grid-cols-7 gap-1 mb-2">
                         {weekDayNames.map((day) => (
-                            <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
+                            <div key={day} className="p-2 text-center text-sm font-medium text-slate-400">
                                 {day}
                             </div>
                         ))}
@@ -266,12 +270,15 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                                 <div
                                     key={index}
                                     className={`
-                                        min-h-[120px] p-2 border border-gray-200 cursor-pointer hover:bg-gray-50
-                                        ${!day.isCurrentMonth ? 'bg-gray-100 text-gray-400' : 'bg-white'}
-                                        ${isCurrentDay ? 'bg-blue-100 border-blue-500' : ''}
+                                        min-h-[120px] p-2 border rounded-md cursor-pointer hover:bg-slate-700 transition-colors
+                                        ${!day.isCurrentMonth 
+                                            ? 'bg-slate-900 border-slate-600 text-slate-500' 
+                                            : 'bg-slate-800 border-slate-600 text-slate-200'
+                                        }
+                                        ${isCurrentDay ? 'bg-indigo-900 border-indigo-500 text-indigo-200' : ''}
                                     `}
                                 >
-                                    <div className={`text-sm font-medium ${isCurrentDay ? 'text-blue-700' : ''}`}>
+                                    <div className={`text-sm font-medium ${isCurrentDay ? 'text-indigo-300' : ''}`}>
                                         {day.date}
                                     </div>
 
@@ -280,7 +287,7 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                                             <div
                                                 key={taskIndex}
                                                 className={`text-xs px-1 py-0.5 rounded text-white truncate ${getPriorityColor(task.priority)}`}
-                                                title={`${task.title}\nDue Date: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US') : 'None'}\nPriority: ${['Low', 'Medium', 'High', 'Critical'][task.priority]}`}
+                                                title={`${task.title}\nDue Date: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US') : 'None'}\nPriority: ${priorityStyles[task.priority]?.text || 'Unknown'}`}
                                             >
                                                 {task.title}
                                             </div>
@@ -296,7 +303,7 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
             {/* Day View */}
             {viewMode === 'Day' && (
                 <div className="space-y-4">
-                    <div className="text-center text-lg font-semibold">
+                    <div className="text-center text-lg font-semibold text-white">
                         {currentDate.toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
@@ -304,16 +311,21 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                             weekday: 'long'
                         })}
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
                         {dayTasks.length > 0 ? (
                             <div className="space-y-2">
                                 {dayTasks.map((task, index) => (
-                                    <div key={index} className="bg-white p-3 rounded border-l-4"
-                                         style={{borderLeftColor: getPriorityColorHex(task.priority)}}>
-                                        <div className="font-medium">{task.title}</div>
-                                        <div className="text-sm text-gray-600">{task.description}</div>
-                                        <div className="text-xs text-gray-500 mt-1 flex justify-between">
-                                            <span>Priority: {['Low', 'Medium', 'High', 'Critical'][task.priority]}</span>
+                                    <div 
+                                        key={index} 
+                                        className="bg-slate-800 p-3 rounded border-l-4 border border-slate-600"
+                                        style={{borderLeftColor: getPriorityColorHex(task.priority)}}
+                                    >
+                                        <div className="font-medium text-white">{task.title}</div>
+                                        <div className="text-sm text-slate-300">{task.description}</div>
+                                        <div className="text-xs text-slate-400 mt-1 flex justify-between">
+                                            <span className={`px-2 py-1 rounded-full ${priorityStyles[task.priority]?.bg} ${priorityStyles[task.priority]?.textColor}`}>
+                                                Priority: {priorityStyles[task.priority]?.text || 'Unknown'}
+                                            </span>
                                             {task.dueDate && (
                                                 <span>Due: {new Date(task.dueDate).toLocaleDateString('en-US')}</span>
                                             )}
@@ -322,7 +334,7 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center text-gray-500">No tasks for today</div>
+                            <div className="text-center text-slate-400">No tasks for today</div>
                         )}
                     </div>
                 </div>
@@ -331,25 +343,30 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
             {/* List View */}
             {viewMode === 'List' && (
                 <div className="space-y-4">
-                    <div className="text-lg font-semibold">All Tasks</div>
+                    <div className="text-lg font-semibold text-white">All Tasks</div>
                     {projectTasks.length > 0 ? (
                         <div className="space-y-2">
                             {projectTasks
                                 .filter(task => task.dueDate)
                                 .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
                                 .map((task, index) => (
-                                <div key={index} className="bg-white p-3 rounded border-l-4"
-                                     style={{borderLeftColor: getPriorityColorHex(task.priority)}}>
+                                <div 
+                                    key={index} 
+                                    className="bg-slate-800 p-3 rounded border-l-4 border border-slate-600"
+                                    style={{borderLeftColor: getPriorityColorHex(task.priority)}}
+                                >
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <div className="font-medium">{task.title}</div>
-                                            <div className="text-sm text-gray-600">{task.description}</div>
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                Priority: {['Low', 'Medium', 'High', 'Critical'][task.priority]} |
-                                                Status: {['To Do', 'In Progress', 'In Review', 'Done'][task.status]}
+                                            <div className="font-medium text-white">{task.title}</div>
+                                            <div className="text-sm text-slate-300">{task.description}</div>
+                                            <div className="text-xs text-slate-400 mt-1 flex items-center space-x-4">
+                                                <span className={`px-2 py-1 rounded-full ${priorityStyles[task.priority]?.bg} ${priorityStyles[task.priority]?.textColor}`}>
+                                                    {priorityStyles[task.priority]?.text || 'Unknown'}
+                                                </span>
+                                                <span>Status: {['To Do', 'In Progress', 'In Review', 'Done'][task.status]}</span>
                                             </div>
                                         </div>
-                                        <div className="text-sm text-gray-500">
+                                        <div className="text-sm text-slate-400">
                                             {new Date(task.dueDate).toLocaleDateString('en-US')}
                                         </div>
                                     </div>
@@ -357,18 +374,20 @@ const Calendar = ({ selectedProject, projectTasks = [] }) => {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center text-gray-500">No tasks</div>
+                        <div className="text-center text-slate-400 bg-slate-700 p-6 rounded-lg border border-slate-600">
+                            No tasks with due dates
+                        </div>
                     )}
                 </div>
             )}
 
             {/* Project Information */}
             {selectedProject && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                    <div className="text-sm text-gray-600">
-                        Showing Project: <span className="font-medium text-gray-800">{selectedProject.name}</span>
+                <div className="mt-4 p-3 bg-slate-700 rounded-md border border-slate-600">
+                    <div className="text-sm text-slate-300">
+                        Showing Project: <span className="font-medium text-white">{selectedProject.name}</span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-slate-400 mt-1">
                         {projectTasks.length} tasks total
                     </div>
                 </div>
