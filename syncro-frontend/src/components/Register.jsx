@@ -54,32 +54,32 @@ const Register = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8">
+            <div className="max-w-md w-full space-y-8 bg-slate-800 p-10 rounded-xl shadow-lg border border-slate-700">
                 <div>
-                    <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-green-900">
-                        <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-indigo-900 bg-opacity-50">
+                        <svg className="h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                     </div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+                    <h2 className="mt-6 text-center text-4xl font-extrabold text-white">
                         Create your account
                     </h2>
-                    <p className="mt-2 text-center text-sm text-slate-400">
+                    <p className="mt-2 text-center text-lg text-slate-400">
                         Join Syncro today
                     </p>
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {error && (
-                        <div className="rounded-md bg-red-900 bg-opacity-50 p-4">
+                        <div className="rounded-md bg-red-900 bg-opacity-50 border border-red-500 p-4">
                             <div className="flex">
                                 <div className="flex-shrink-0">
-                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <svg className="h-6 w-6 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                                 <div className="ml-3">
-                                    <h3 className="text-sm font-medium text-red-300">
+                                    <h3 className="text-base font-medium text-red-300">
                                         {error}
                                     </h3>
                                 </div>
@@ -87,9 +87,9 @@ const Register = () => {
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div>
-                            <label htmlFor="username" className="block text-sm font-medium text-slate-300">
+                            <label htmlFor="username" className="block text-base font-medium text-slate-300">
                                 Username
                             </label>
                             <input
@@ -100,13 +100,13 @@ const Register = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 disabled={loading}
-                                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm disabled:bg-slate-800 disabled:cursor-not-allowed"
+                                className="mt-1 appearance-none relative block w-full px-4 py-3 border border-slate-600 bg-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
                                 placeholder="Choose a username"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-slate-300">
+                            <label htmlFor="email" className="block text-base font-medium text-slate-300">
                                 Email Address
                             </label>
                             <input
@@ -117,13 +117,13 @@ const Register = () => {
                                 value={formData.email}
                                 onChange={handleChange}
                                 disabled={loading}
-                                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm disabled:bg-slate-800 disabled:cursor-not-allowed"
+                                className="mt-1 appearance-none relative block w-full px-4 py-3 border border-slate-600 bg-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
                                 placeholder="Enter your email"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-slate-300">
+                            <label htmlFor="password" className="block text-base font-medium text-slate-300">
                                 Password
                             </label>
                             <input
@@ -134,13 +134,13 @@ const Register = () => {
                                 value={formData.password}
                                 onChange={handleChange}
                                 disabled={loading}
-                                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm disabled:bg-slate-800 disabled:cursor-not-allowed"
+                                className="mt-1 appearance-none relative block w-full px-4 py-3 border border-slate-600 bg-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
                                 placeholder="Create a password"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300">
+                            <label htmlFor="confirmPassword" className="block text-base font-medium text-slate-300">
                                 Confirm Password
                             </label>
                             <input
@@ -151,7 +151,7 @@ const Register = () => {
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 disabled={loading}
-                                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm disabled:bg-slate-800 disabled:cursor-not-allowed"
+                                className="mt-1 appearance-none relative block w-full px-4 py-3 border border-slate-600 bg-slate-700 placeholder-slate-400 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-lg disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
                                 placeholder="Confirm your password"
                             />
                         </div>
@@ -161,7 +161,7 @@ const Register = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-green-400 disabled:cursor-not-allowed transition duration-150 ease-in-out"
+                            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-lg font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed transition duration-150 ease-in-out"
                         >
                             {loading ? (
                                 <>
@@ -178,11 +178,11 @@ const Register = () => {
                     </div>
 
                     <div className="text-center">
-                        <p className="text-sm text-slate-400">
+                        <p className="text-base text-slate-400">
                             Already have an account?{' '}
                             <Link
                                 to="/login"
-                                className="font-medium text-green-400 hover:text-green-300 transition duration-150 ease-in-out"
+                                className="font-medium text-indigo-400 hover:text-indigo-300 transition duration-150 ease-in-out"
                             >
                                 Sign in here
                             </Link>
