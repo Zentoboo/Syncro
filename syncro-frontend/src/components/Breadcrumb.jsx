@@ -1,4 +1,4 @@
-// src/components/Breadcrumb.jsx
+// zentoboo/syncro/Syncro-bc266b2d3b44722e8ff4501783c8d62f150e59ee/syncro-frontend/src/components/Breadcrumb.jsx
 import React from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useBreadcrumb } from '../contexts/BreadcrumbContext';
@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Simple SVG icons
 const ChevronRightIcon = () => (
-    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
 );
@@ -103,9 +103,9 @@ const Breadcrumb = () => {
     }
 
     return (
-        <div className="bg-gray-50 border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                <nav className="flex items-center space-x-2 text-sm text-gray-500">
+        <div className="bg-slate-900 border-b border-slate-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav className="flex items-center space-x-2 text-sm font-medium h-12">
                     {breadcrumbs.map((breadcrumb, index) => (
                         <React.Fragment key={index}>
                             {index > 0 && <ChevronRightIcon />}
@@ -113,12 +113,12 @@ const Breadcrumb = () => {
                             {breadcrumb.href ? (
                                 <Link 
                                     to={breadcrumb.href} 
-                                    className="hover:text-blue-600 transition-colors"
+                                    className="text-slate-400 hover:text-indigo-600 transition-colors"
                                 >
                                     <span>{breadcrumb.label}</span>
                                 </Link>
                             ) : (
-                                <span className="text-gray-900 font-medium">
+                                <span className="text-white">
                                     <span>{breadcrumb.label}</span>
                                 </span>
                             )}

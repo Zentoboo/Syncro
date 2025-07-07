@@ -1,4 +1,4 @@
-// src/components/tasks-application.jsx - Updated with backdrop blur modals
+// zentoboo/syncro/Syncro-bc266b2d3b44722e8ff4501783c8d62f150e59ee/syncro-frontend/src/components/tasks-application.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -9,38 +9,38 @@ import { useBreadcrumb } from '../contexts/BreadcrumbContext';
 
 // --- Helper Components ---
 const Spinner = ({ size = 'h-5 w-5' }) => (
-    <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-blue-500`}></div>
+    <div className={`animate-spin rounded-full ${size} border-t-2 border-b-2 border-indigo-400`}></div>
 );
 
 const PlusIcon = () => (
-    <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24" stroke="currentColor">
+    <svg className="h-6 w-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
     </svg>
 );
 
 const TrashIcon = () => (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
 );
 
 const CommentIcon = () => (
-    <svg className="h-4 w-4 mr-1.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="h-5 w-5 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </svg>
 );
 
 const PaperClipIcon = () => (
-    <svg className="h-4 w-4 mr-1.5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="h-5 w-5 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
     </svg>
 );
 
 const priorityStyles = {
-    0: { text: 'Low', bg: 'bg-gray-200', text_color: 'text-gray-800' },
-    1: { text: 'Medium', bg: 'bg-blue-200', text_color: 'text-blue-800' },
-    2: { text: 'High', bg: 'bg-yellow-200', text_color: 'text-yellow-800' },
-    3: { text: 'Critical', bg: 'bg-red-200', text_color: 'text-red-800' }
+    0: { text: 'Low', bg: 'bg-gray-700', text_color: 'text-gray-200' },
+    1: { text: 'Medium', bg: 'bg-blue-900', text_color: 'text-blue-200' },
+    2: { text: 'High', bg: 'bg-yellow-900', text_color: 'text-yellow-200' },
+    3: { text: 'Critical', bg: 'bg-red-900', text_color: 'text-red-200' }
 };
 
 const statusMap = {
@@ -248,40 +248,40 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
     };
 
     return (
-        <div className="bg-white p-3 rounded-md shadow-sm border border-gray-200 mb-3" >
+        <div className="bg-slate-700 p-4 rounded-lg shadow-md border border-slate-600 mb-4" >
             <div className="flex justify-between items-start cursor-pointer" onClick={() => onEdit(task)}>
-                <h4 className="font-semibold text-sm">{task.title}</h4>
+                <h4 className="font-semibold text-white">{task.title}</h4>
                 <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRole}>
                     <button onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="text-gray-400 hover:text-red-500"><TrashIcon /></button>
                 </RoleBasedComponent>
             </div>
-            {task.description && <p className="text-xs text-gray-600 mt-2 whitespace-pre-wrap">{task.description}</p>}
-            <div className="flex justify-between items-center mt-2 text-xs">
-                <span className={`px-2 py-1 rounded-full ${priorityStyles[task.priority].bg} ${priorityStyles[task.priority].text_color}`}>
+            {task.description && <p className="text-sm text-gray-300 mt-2 whitespace-pre-wrap">{task.description}</p>}
+            <div className="flex justify-between items-center mt-3 text-sm">
+                <span className={`px-2 py-1 rounded-full text-xs ${priorityStyles[task.priority].bg} ${priorityStyles[task.priority].text_color}`}>
                     {priorityStyles[task.priority].text}
                 </span>
-                <span>{task.assignedTo?.username || 'Unassigned'}</span>
+                <span className="text-gray-400">{task.assignedTo?.username || 'Unassigned'}</span>
             </div>
             
             {/* Display Comments */}
             {task.comments && task.comments.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                    <h5 className="text-xs font-bold text-gray-500 mb-2 flex items-center"><CommentIcon /> Latest Comment</h5>
-                    <div className="text-xs bg-gray-50 p-2 rounded">
-                        <p className="whitespace-pre-wrap break-words">{task.comments[0].content}</p>
-                        <p className="text-right text-gray-400 mt-1">- {task.comments[0].user.username}</p>
+                <div className="mt-4 pt-3 border-t border-slate-600">
+                    <h5 className="text-xs font-bold text-gray-400 mb-2 flex items-center"><CommentIcon /> Latest Comment</h5>
+                    <div className="text-sm bg-slate-800 p-3 rounded-md">
+                        <p className="whitespace-pre-wrap break-words text-gray-200">{task.comments[0].content}</p>
+                        <p className="text-right text-gray-500 mt-1">- {task.comments[0].user.username}</p>
                     </div>
                 </div>
             )}
             
             {/* Display Attachments */}
             {task.attachments && task.attachments.length > 0 && (
-                <div className="mt-3 pt-2">
-                     <h5 className="text-xs font-bold text-gray-500 mb-2 flex items-center"><PaperClipIcon /> Attachments</h5>
-                    <ul className="space-y-1">
+                <div className="mt-4 pt-3 border-t border-slate-600">
+                     <h5 className="text-xs font-bold text-gray-400 mb-2 flex items-center"><PaperClipIcon /> Attachments</h5>
+                    <ul className="space-y-2">
                         {task.attachments.map(att => (
                             <li key={att.id}>
-                                <button onClick={() => handleDownload(att.id, att.fileName)} className="text-xs text-blue-600 hover:underline hover:text-blue-800 text-left break-all">
+                                <button onClick={() => handleDownload(att.id, att.fileName)} className="text-sm text-indigo-400 hover:underline hover:text-indigo-300 text-left break-all">
                                     {att.fileName}
                                 </button>
                             </li>
@@ -322,8 +322,6 @@ const TasksApplication = () => {
             ]);
             setProject(projectRes.data);
             setTasks(tasksRes.data);
-            
-            // Update breadcrumb context with project name
             updateProjectInfo(projectId, projectRes.data.name);
         } catch (err) {
             setError('Failed to fetch project data. You may not have access to this project.');
@@ -392,7 +390,6 @@ const TasksApplication = () => {
     };
 
     const handleSubmitForReview = async (taskId, { comment, file }) => {
-        setLoading(true); // Use the main loading state to overlay the screen
         setError('');
         try {
             // 1. Upload file if one was selected
@@ -455,9 +452,9 @@ const TasksApplication = () => {
         setIsModalOpen(true);
     };
 
-    if (loading) return <div className="p-8 flex justify-center items-center h-screen"><Spinner size="h-12 w-12" /></div>;
-    if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
-    if (!project) return <div className="p-8 text-center">Project not found.</div>;
+    if (loading) return <div className="p-8 flex justify-center items-center h-screen bg-slate-900"><Spinner size="h-16 w-16" /></div>;
+    if (error) return <div className="p-8 text-center text-red-400 bg-slate-900">{error}</div>;
+    if (!project) return <div className="p-8 text-center bg-slate-900">Project not found.</div>;
 
     const taskColumns = {
         todo: tasks.filter(t => t.status === 0),
@@ -467,20 +464,20 @@ const TasksApplication = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <header className="bg-white shadow-sm p-4">
+        <div className="min-h-screen bg-slate-900 text-gray-200">
+            <header className="bg-slate-800 shadow-lg p-6">
                 <div className="max-w-screen-xl mx-auto flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold">{project.name}</h1>
-                        <p className="text-sm text-gray-600">{project.description}</p>
+                        <h1 className="text-4xl font-bold text-white">{project.name}</h1>
+                        <p className="text-lg text-gray-400 mt-1">{project.description}</p>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-6">
                         <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRoleInProject}>
-                            <button onClick={() => handleOpenModal()} className="flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                            <button onClick={() => handleOpenModal()} className="flex items-center justify-center px-6 py-3 text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
                                 <PlusIcon /> Add New Task
                             </button>
                         </RoleBasedComponent>
-                        <Link to="/dashboard" className="text-sm text-blue-600 hover:underline">Back to Dashboard</Link>
+                        <Link to="/dashboard" className="text-base text-indigo-400 hover:underline">Back to Dashboard</Link>
                     </div>
                 </div>
             </header>
@@ -488,24 +485,24 @@ const TasksApplication = () => {
             <main className="p-4 sm:p-6 lg:p-8 max-w-screen-xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* To Do Column */}
-                    <div className="bg-gray-200 p-4 rounded-lg">
-                        <h3 className="font-bold mb-4">To Do ({taskColumns.todo.length})</h3>
-                        <div>{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
+                    <div className="bg-slate-800 p-5 rounded-xl">
+                        <h3 className="font-bold text-xl mb-4 text-gray-200">To Do ({taskColumns.todo.length})</h3>
+                        <div className="space-y-4">{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} />)}</div>
                     </div>
                     {/* In Progress Column */}
-                    <div className="bg-gray-200 p-4 rounded-lg">
-                        <h3 className="font-bold mb-4">In Progress ({taskColumns.inProgress.length})</h3>
-                        <div>{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
+                    <div className="bg-slate-800 p-5 rounded-xl">
+                        <h3 className="font-bold text-xl mb-4 text-gray-200">In Progress ({taskColumns.inProgress.length})</h3>
+                        <div className="space-y-4">{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
                     </div>
                     {/* In Review Column */}
-                    <div className="bg-gray-200 p-4 rounded-lg">
-                        <h3 className="font-bold mb-4">In Review ({taskColumns.inReview.length})</h3>
-                        <div>{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
+                    <div className="bg-slate-800 p-5 rounded-xl">
+                        <h3 className="font-bold text-xl mb-4 text-gray-200">In Review ({taskColumns.inReview.length})</h3>
+                        <div className="space-y-4">{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
                     </div>
                     {/* Done Column */}
-                    <div className="bg-gray-200 p-4 rounded-lg">
-                        <h3 className="font-bold mb-4">Done ({taskColumns.done.length})</h3>
-                        <div>{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
+                    <div className="bg-slate-800 p-5 rounded-xl">
+                        <h3 className="font-bold text-xl mb-4 text-gray-200">Done ({taskColumns.done.length})</h3>
+                        <div className="space-y-4">{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} />)}</div>
                     </div>
                 </div>
             </main>
