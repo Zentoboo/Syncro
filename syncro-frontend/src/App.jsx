@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import TasksApplication from './components/tasks-application';
+import TaskDetail from './components/TaskDetail';
 import Contributors from './components/Contributors';
 import ProjectMembers from './components/ProjectMembers';
 import NotificationsPage from './components/NotificationsPage';
@@ -112,76 +113,86 @@ function App() {
           <div className="App">
             <Breadcrumb />
             <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Notifications Page Route */}
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute>
-                  <NotificationsPage />
-                </ProtectedRoute>
-              }
-            />
+              {/* Notifications Page Route */}
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Project Tasks Management Route */}
-            <Route
-              path="/project/:projectId/tasks"
-              element={
-                <ProtectedRoute>
-                  <TasksApplication />
-                </ProtectedRoute>
-              }
-            />
+              {/* Project Tasks Management Route */}
+              <Route
+                path="/project/:projectId/tasks"
+                element={
+                  <ProtectedRoute>
+                    <TasksApplication />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Contributors Page Route */}
-            <Route
-              path="/project/:projectId/contributors"
-              element={
-                <ProtectedRoute>
-                  <Contributors />
-                </ProtectedRoute>
-              }
-            />
+              {/* Specific Task Detail Route */}
+              <Route
+                path="/project/:projectId/task/:taskId"
+                element={
+                  <ProtectedRoute>
+                    <TaskDetail />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Project Members Management Route */}
-            <Route
-              path="/project/:projectId/members"
-              element={
-                <ProtectedRoute>
-                  <ProjectMembers />
-                </ProtectedRoute>
-              }
-            />
+              {/* Contributors Page Route */}
+              <Route
+                path="/project/:projectId/contributors"
+                element={
+                  <ProtectedRoute>
+                    <Contributors />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Admin only route */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRole="Admin">
-                  <AdminPanel />
-                </ProtectedRoute>
-              }
-            />
+              {/* Project Members Management Route */}
+              <Route
+                path="/project/:projectId/members"
+                element={
+                  <ProtectedRoute>
+                    <ProjectMembers />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </div>
-      </Router>
+              {/* Admin only route */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requiredRole="Admin">
+                    <AdminPanel />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Default redirect */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </div>
+        </Router>
       </BreadcrumbProvider>
     </AuthProvider>
   );
