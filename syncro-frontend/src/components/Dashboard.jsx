@@ -292,22 +292,22 @@ const Dashboard = () => {
     }, []);
 
     const fetchProjectTasks = useCallback(async () => {
-    if (!selectedProject?.id) {
-        setProjectTasks([]);
-        return;
-    }
+        if (!selectedProject?.id) {
+            setProjectTasks([]);
+            return;
+        }
 
-    try {
-        const response = await axios.get(`/api/task?projectId=${selectedProject.id}`);
-        setProjectTasks(response.data);
-    } catch (error) {
-        console.error("Error fetching project tasks:", error);
-        setProjectTasks([]);
-    }
+        try {
+            const response = await axios.get(`/api/task?projectId=${selectedProject.id}`);
+            setProjectTasks(response.data);
+        } catch (error) {
+            console.error("Error fetching project tasks:", error);
+            setProjectTasks([]);
+        }
     }, [selectedProject?.id]);
 
     useEffect(() => {
-    fetchProjectTasks();
+        fetchProjectTasks();
     }, [fetchProjectTasks]);
 
     useEffect(() => {
@@ -463,8 +463,8 @@ const Dashboard = () => {
                             <NotificationBell user={user} />
                             <span className="text-sm text-gray-600">Welcome, {user?.username}</span>
                             <span className={`font-medium px-2 py-1 rounded-full text-xs ${user?.role === 'Admin' ? 'bg-red-100 text-red-800' :
-                                    user?.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-green-100 text-green-800'
+                                user?.role === 'ProjectManager' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-green-100 text-green-800'
                                 }`}>
                                 {user?.role}
                             </span>
@@ -532,36 +532,32 @@ const Dashboard = () => {
 
                         {/* Right Content Area */}
                         <div className="lg:col-span-3">
-                            {/* Action buttons for selected project */}
-                            {selectedProject && (
-                                <div className="mb-6 flex flex-wrap gap-4 items-center">
-                                    <button
-                                        onClick={handleNavigateToTasks}
-                                        className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
-                                    >
-                                        Manage Tasks
-                                    </button>
-
-                                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={getUserRoleInProject(selectedProject)}>
-                                        <button
-                                            onClick={() => navigate(`/project/${selectedProject.id}/members`)}
-                                            className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700"
-                                        >
-                                            Manage Members
-                                        </button>
-                                    </RoleBasedComponent>
-                                </div>
-                            )}
 
                             {loading.details ? (
                                 <div className="flex justify-center items-center h-64"><Spinner size="h-10 w-10" /></div>
                             ) : selectedProject && projectDashboardData ? (
                                 <div>
                                     <div className="bg-white p-6 rounded-lg shadow mb-8">
-                                        <div className="flex justify-between items-start">
+                                        <div className="flex flex-wrap justify-between items-start gap-4">
                                             <div>
                                                 <h2 className="text-2xl font-bold">{selectedProject.name}</h2>
                                                 <p className="text-gray-600 mt-1">{selectedProject.description}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-3">
+                                                <button
+                                                    onClick={handleNavigateToTasks}
+                                                    className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                                                >
+                                                    Manage Tasks
+                                                </button>
+                                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={getUserRoleInProject(selectedProject)}>
+                                                    <button
+                                                        onClick={() => navigate(`/project/${selectedProject.id}/members`)}
+                                                        className="px-4 py-2 text-sm bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                                                    >
+                                                        Manage Members
+                                                    </button>
+                                                </RoleBasedComponent>
                                             </div>
                                         </div>
                                     </div>
@@ -570,8 +566,8 @@ const Dashboard = () => {
                                         <Contributors members={projectDashboardData.tasksByMember} onViewAll={handleViewAllContributors} />
                                     </div>
                                     <Calendar
-                                     selectedProject={selectedProject}
-                                     projectTasks={projectTasks}
+                                        selectedProject={selectedProject}
+                                        projectTasks={projectTasks}
                                     />
                                 </div>
                             ) : (
