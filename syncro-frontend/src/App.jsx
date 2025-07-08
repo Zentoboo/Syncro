@@ -12,6 +12,7 @@ import Contributors from './components/Contributors';
 import ProjectMembers from './components/ProjectMembers';
 import NotificationsPage from './components/NotificationsPage';
 import Breadcrumb from './components/Breadcrumb';
+import About from './components/About';
 
 const Unauthorized = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
