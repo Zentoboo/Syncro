@@ -18,7 +18,7 @@ const Breadcrumb = () => {
     const { user } = useAuth();
     
     // Don't show breadcrumb on login/register pages
-    if (['/login', '/register', '/unauthorized', '/about'].includes(location.pathname)) {
+    if (['/login', '/register', '/unauthorized', '/about', , '/user-management'].includes(location.pathname)) {
         return null;
     }
 

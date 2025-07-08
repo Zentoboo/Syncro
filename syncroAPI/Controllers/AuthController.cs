@@ -60,8 +60,9 @@ namespace syncroAPI.Controllers
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 return Unauthorized("Invalid credentials");
 
+            // Enhanced check: Prevent banned users from logging in
             if (!user.IsActive)
-                return Unauthorized("Account is inactive");
+                return Unauthorized("Your account has been banned. Please contact an administrator for assistance.");
 
             var token = _jwtService.GenerateToken(user);
 

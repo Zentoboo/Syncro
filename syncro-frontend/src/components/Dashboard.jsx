@@ -173,7 +173,6 @@ const Dashboard = () => {
     const [projectDashboardData, setProjectDashboardData] = useState(null);
     const [loading, setLoading] = useState({ projects: true, details: false });
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('dashboard');
     const [projectTasks, setProjectTasks] = useState([]);
 
     const fetchProjects = useCallback(async () => {
@@ -358,16 +357,9 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 text-gray-200">
-            {/* Shared Header component */}
-            <Header
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                showUserManagement={true}
-            />
+            {/* Header component */}
+            <Header showUserManagement={true} />
             <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-                {activeTab === 'users' ? (
-                    <AdminOnly><UserManagement /></AdminOnly>
-                ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         <div className="lg:col-span-1">
                             <div className="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
@@ -460,7 +452,6 @@ const Dashboard = () => {
                             )}
                         </div>
                     </div>
-                )}
             </main>
 
             <CreateProjectModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onCreate={handleCreateProject} />
