@@ -1,17 +1,22 @@
 // src/contexts/BreadcrumbContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const BreadcrumbContext = createContext();
 
 export const BreadcrumbProvider = ({ children }) => {
     const [projectInfo, setProjectInfo] = useState({});
 
-    const updateProjectInfo = (projectId, projectName) => {
-        setProjectInfo(prev => ({
-            ...prev,
-            [projectId]: projectName
-        }));
-    };
+    const updateProjectInfo = useCallback((projectId, projectName) => {
+        setProjectInfo(prev => {
+            if (prev[projectId] !== projectName) {
+                return {
+                    ...prev,
+                    [projectId]: projectName
+                };
+            }
+            return prev;
+        });
+    }, []);
 
     const getProjectName = (projectId) => {
         return projectInfo[projectId] || null;

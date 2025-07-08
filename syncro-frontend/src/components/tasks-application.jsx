@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useRBAC } from '../hooks/useRBAC';
 import { RoleBasedComponent } from './RBACComponents';
 import { useBreadcrumb } from '../contexts/BreadcrumbContext';
+import EmailNotificationModal from './EmailNotificationModal'; 
 
 // --- Helper Components ---
 const Spinner = ({ size = 'h-5 w-5' }) => (
@@ -22,6 +23,13 @@ const TrashIcon = () => (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
     </svg>
 );
+
+const EmailIcon = () => (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+);
+
 
 const CommentIcon = () => (
     <svg className="h-5 w-5 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -377,27 +385,8 @@ const SubmitReviewModal = ({ isOpen, onClose, onSubmit, task }) => {
 };
 
 // --- Task Card ---
-const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOpenReviewModal, projectId }) => {
+const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOpenReviewModal, onOpenEmailModal, projectId }) => {
     const navigate = useNavigate();
-
-    // Helper function to handle secure file downloads
-    const handleDownload = async (attachmentId, fileName) => {
-        try {
-            const response = await axios.get(`/api/file/download/${attachmentId}`, {
-                responseType: 'blob',
-            });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode.removeChild(link);
-        } catch (error) {
-            console.error('Error downloading file:', error);
-            alert('Could not download the file.');
-        }
-    };
 
     const handleCardClick = (e) => {
         // Don't navigate if clicking on action buttons
@@ -406,7 +395,7 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
         }
         navigate(`/project/${projectId}/task/${task.id}`);
     };
-    
+
     const renderActions = () => {
         const isManager = userRole === 'Admin' || userRole === 'ProjectManager';
         const isAssignedToMe = user && task.assignedTo?.id === user.id;
@@ -415,11 +404,11 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
             case 0: // ToDo
                 if (isAssignedToMe) {
                     return (
-                        <button 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                onUpdateStatus(task.id, 1); 
-                            }} 
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateStatus(task.id, 1);
+                            }}
                             className="w-full mt-2 px-3 py-1 text-xs text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors"
                         >
                             Start Task
@@ -430,11 +419,11 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
             case 1: // In Progress
                 if (isAssignedToMe) {
                     return (
-                        <button 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                onOpenReviewModal(task); 
-                            }} 
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenReviewModal(task);
+                            }}
                             className="w-full mt-2 px-3 py-1 text-xs text-white bg-purple-500 rounded hover:bg-purple-600 transition-colors"
                         >
                             Submit for Review
@@ -446,20 +435,20 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
                 if (isManager) {
                     return (
                         <div className="flex space-x-2 mt-2">
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    onUpdateStatus(task.id, 1); 
-                                }} 
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateStatus(task.id, 1);
+                                }}
                                 className="w-full px-3 py-1 text-xs text-white bg-yellow-500 rounded hover:bg-yellow-600 transition-colors"
                             >
                                 Reject
                             </button>
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    onUpdateStatus(task.id, 3); 
-                                }} 
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onUpdateStatus(task.id, 3);
+                                }}
                                 className="w-full px-3 py-1 text-xs text-white bg-green-500 rounded hover:bg-green-600 transition-colors"
                             >
                                 Approve
@@ -474,26 +463,38 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
     };
 
     return (
-        <div 
-            className="bg-slate-700 p-4 rounded-lg shadow-md border border-slate-600 mb-4 cursor-pointer hover:bg-slate-600 transition-colors" 
+        <div
+            className="bg-slate-700 p-4 rounded-lg shadow-md border border-slate-600 mb-4 cursor-pointer hover:bg-slate-600 transition-colors"
             onClick={handleCardClick}
         >
             <div className="flex justify-between items-start">
                 <h4 className="font-semibold text-white hover:text-indigo-300 transition-colors">
                     {task.title}
                 </h4>
-                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRole}>
-                    <button 
-                        onClick={(e) => { 
-                            e.stopPropagation(); 
-                            onDelete(task.id); 
-                        }} 
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-slate-800 rounded"
-                        title="Delete Task"
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenEmailModal(task);
+                        }}
+                        className="text-gray-400 hover:text-blue-500 transition-colors p-1 hover:bg-slate-800 rounded"
+                        title="Send Email Notification"
                     >
-                        <TrashIcon />
+                        <EmailIcon />
                     </button>
-                </RoleBasedComponent>
+                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRole}>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(task.id);
+                            }}
+                            className="text-gray-400 hover:text-red-500 transition-colors p-1 hover:bg-slate-800 rounded"
+                            title="Delete Task"
+                        >
+                            <TrashIcon />
+                        </button>
+                    </RoleBasedComponent>
+                </div>
             </div>
 
             {task.description && (
@@ -508,7 +509,7 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
                 </span>
                 <span className="text-gray-400">{task.assignedTo?.username || 'Unassigned'}</span>
             </div>
-            
+
             {/* Activity Summary */}
             <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
                 <div className="flex items-center space-x-3">
@@ -529,7 +530,7 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
                     Click to view details
                 </span>
             </div>
-            
+
             {/* Display Latest Comment Preview */}
             {task.comments && task.comments.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-slate-600">
@@ -540,12 +541,11 @@ const TaskCard = ({ task, user, userRole, onEdit, onUpdateStatus, onDelete, onOp
                     </div>
                 </div>
             )}
-            
+
             {renderActions()}
         </div>
     );
 };
-
 
 // --- Main Tasks Application Component ---
 const TasksApplication = () => {
@@ -560,6 +560,8 @@ const TasksApplication = () => {
     const [editingTask, setEditingTask] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [reviewingTask, setReviewingTask] = useState(null);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    const [emailTask, setEmailTask] = useState(null);
 
     const userRoleInProject = project?.members?.find(m => m.user.id === user.id)?.role;
 
@@ -580,7 +582,7 @@ const TasksApplication = () => {
         } finally {
             setLoading(false);
         }
-    }, [projectId]);
+    }, [projectId, updateProjectInfo]);
 
     useEffect(() => {
         fetchData();
@@ -685,7 +687,6 @@ const TasksApplication = () => {
         }
     };
 
-
     const handleDeleteTask = async (taskId) => {
         if (window.confirm("Are you sure you want to delete this task?")) {
             try {
@@ -701,6 +702,11 @@ const TasksApplication = () => {
     const handleOpenModal = (task = null) => {
         setEditingTask(task);
         setIsModalOpen(true);
+    };
+
+    const handleOpenEmailModal = (task) => {
+        setEmailTask(task);
+        setIsEmailModalOpen(true);
     };
 
     if (loading) return <div className="p-8 flex justify-center items-center h-screen bg-slate-900"><Spinner size="h-16 w-16" /></div>;
@@ -738,22 +744,22 @@ const TasksApplication = () => {
                     {/* To Do Column */}
                     <div className="bg-slate-800 p-5 rounded-xl">
                         <h3 className="font-bold text-xl mb-4 text-gray-200">To Do ({taskColumns.todo.length})</h3>
-                        <div className="space-y-4">{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} projectId={projectId} />)}</div>
+                        <div className="space-y-4">{taskColumns.todo.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenEmailModal={handleOpenEmailModal} projectId={projectId} />)}</div>
                     </div>
                     {/* In Progress Column */}
                     <div className="bg-slate-800 p-5 rounded-xl">
                         <h3 className="font-bold text-xl mb-4 text-gray-200">In Progress ({taskColumns.inProgress.length})</h3>
-                        <div className="space-y-4">{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} projectId={projectId} />)}</div>
+                        <div className="space-y-4">{taskColumns.inProgress.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} onOpenEmailModal={handleOpenEmailModal} projectId={projectId} />)}</div>
                     </div>
                     {/* In Review Column */}
                     <div className="bg-slate-800 p-5 rounded-xl">
                         <h3 className="font-bold text-xl mb-4 text-gray-200">In Review ({taskColumns.inReview.length})</h3>
-                        <div className="space-y-4">{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} projectId={projectId} />)}</div>
+                        <div className="space-y-4">{taskColumns.inReview.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} onOpenEmailModal={handleOpenEmailModal} projectId={projectId} />)}</div>
                     </div>
                     {/* Done Column */}
                     <div className="bg-slate-800 p-5 rounded-xl">
                         <h3 className="font-bold text-xl mb-4 text-gray-200">Done ({taskColumns.done.length})</h3>
-                        <div className="space-y-4">{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} projectId={projectId} />)}</div>
+                        <div className="space-y-4">{taskColumns.done.map(task => <TaskCard key={task.id} task={task} user={user} userRole={userRoleInProject} onEdit={handleOpenModal} onUpdateStatus={handleUpdateTaskStatus} onDelete={handleDeleteTask} onOpenReviewModal={handleOpenReviewModal} onOpenEmailModal={handleOpenEmailModal} projectId={projectId} />)}</div>
                     </div>
                 </div>
             </main>
@@ -771,6 +777,14 @@ const TasksApplication = () => {
                 onSubmit={handleSubmitForReview}
                 task={reviewingTask}
             />
+            {project && emailTask && (
+                <EmailNotificationModal
+                    isOpen={isEmailModalOpen}
+                    onClose={() => setIsEmailModalOpen(false)}
+                    task={emailTask}
+                    projectMembers={project.members}
+                />
+            )}
         </div>
     );
 };

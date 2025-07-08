@@ -39,6 +39,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -46,10 +47,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173") 
+            policy.WithOrigins("http://localhost:3000", "http://localhost:5173") 
                   .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
+                  .AllowAnyHeader();
         });
 });
 
@@ -67,6 +67,7 @@ app.UseHttpsRedirection();
 // Static files (for file uploads)
 app.UseStaticFiles();
 
+// Use CORS before Authentication and Authorization
 app.UseCors("AllowReactApp");
 
 app.UseAuthentication();
@@ -82,3 +83,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+// dumdum898989@gmail.com
+// onepunchman12
