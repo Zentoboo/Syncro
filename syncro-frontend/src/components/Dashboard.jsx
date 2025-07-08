@@ -16,6 +16,12 @@ const PlusIcon = () => (
     </svg>
 );
 
+const MailIcon = () => (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+);
+
 const TriangleIcon = () => (
     <svg className="h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
         <path d="M6.42,21,17.58,12,6.42,3Z" />
@@ -165,7 +171,7 @@ const CreateProjectModal = ({ isOpen, onClose, onCreate }) => {
 
 // --- Main Dashboard Component ---
 const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, token } = useAuth();
     const navigate = useNavigate();
     const { canCreateProject } = useRBAC();
     const [projects, setProjects] = useState([]);
@@ -232,6 +238,24 @@ const Dashboard = () => {
     useEffect(() => {
         fetchProjectDetails();
     }, [fetchProjectDetails]);
+
+    const handleSendDigest = async (projectId, projectName) => {
+        if (!window.confirm(`Send daily digest for "${projectName}"?`)) {
+            return;
+        }
+
+        try {
+            await axios.post(`/api/dailydigest/send-digests?projectId=${projectId}`, {}, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            alert(`Daily digest for "${projectName}" has been queued for sending!`);
+        } catch (error) {
+            console.error("Error sending digest:", error);
+            alert(`Failed to send digest for "${projectName}". Check the console for details.`);
+        }
+    };
 
     const handleCreateProject = async (name, description) => {
         try {
@@ -383,9 +407,23 @@ const Dashboard = () => {
                                     <>
                                         <ul className="space-y-3">
                                             {projects.map(project => (
-                                                <li key={project.id} onClick={() => handleSelectProject(project)} className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${selectedProject?.id === project.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-700 hover:bg-slate-600 hover:shadow-md text-gray-200'}`}>
-                                                    <div className="font-semibold text-lg">{project.name}</div>
-                                                    <div className="text-sm opacity-80">{project.taskCount} tasks</div>
+                                                <li key={project.id} className={`p-4 rounded-lg transition-all duration-200 ${selectedProject?.id === project.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-700 hover:bg-slate-600 hover:shadow-md text-gray-200'}`}>
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="cursor-pointer flex-grow" onClick={() => handleSelectProject(project)}>
+                                                            <div className="font-semibold text-lg">{project.name}</div>
+                                                            <div className="text-sm opacity-80">{project.taskCount} tasks</div>
+                                                        </div>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Prevent project selection
+                                                                handleSendDigest(project.id, project.name);
+                                                            }}
+                                                            className="p-2 text-gray-400 hover:text-indigo-300 hover:bg-slate-800 rounded-full transition-colors"
+                                                            title={`Send digest for ${project.name}`}
+                                                        >
+                                                            <MailIcon />
+                                                        </button>
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>

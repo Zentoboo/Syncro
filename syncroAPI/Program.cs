@@ -40,6 +40,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<syncroAPI.Controllers.DailyDigestController>();
+builder.Services.AddHostedService<DailyDigestService>();
 
 // CORS
 builder.Services.AddCors(options =>
