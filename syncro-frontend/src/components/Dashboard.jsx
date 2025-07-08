@@ -428,23 +428,20 @@ const Dashboard = () => {
     }, [fetchProjectDetails]);
 
     const handleSendDigest = async (projectId, projectName) => {
-        // Replaced window.confirm with console.log for now. Consider a custom modal.
-        console.log(`Confirming send daily digest for "${projectName}"?`);
-
+    if (window.confirm(`Are you sure you want to send the daily digest for "${projectName}"?`)) {
         try {
             await axios.post(`/api/dailydigest/send-digests?projectId=${projectId}`, {}, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            // Replaced alert with console.log. Consider a custom toast/notification.
-            console.log(`Daily digest for "${projectName}" has been queued for sending!`);
+            alert(`Daily digest for "${projectName}" has been queued for sending!`);
         } catch (error) {
             console.error("Error sending digest:", error);
-            // Replaced alert with console.log. Consider a custom toast/notification.
-            console.log(`Failed to send digest for "${projectName}". Check the console for details.`);
+            alert(`Failed to send digest for "${projectName}". Check the console for details.`);
         }
-    };
+    }
+};
 
     const handleCreateProject = async (name, description) => {
         try {

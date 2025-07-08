@@ -159,41 +159,55 @@ const Contributors = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {contributors.map((member) => (
-                                <div key={member.user.id} className="bg-slate-700 rounded-lg p-4">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium">
-                                            {member.user.username.charAt(0).toUpperCase()}
+                            {contributors.map((member) => {
+                                const projectMember = project.members.find(m => m.user.id === member.user.id);
+                                const role = projectMember ? projectMember.role : '';
+
+                                return (
+                                    <div key={member.user.id} className="bg-slate-700 rounded-lg p-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-medium">
+                                                {member.user.username.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-medium text-white">{member.user.username}</h3>
+                                                <p className="text-sm text-slate-400">{member.user.email}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="font-medium text-white">{member.user.username}</h3>
-                                            <p className="text-sm text-slate-400">{member.user.email}</p>
+                                        {role && (
+                                            <div className="mt-2">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    role === 'ProjectManager' ? 'bg-indigo-100 text-indigo-800' : 'bg-green-100 text-green-800'
+                                                }`}>
+                                                    {role === 'ProjectManager' ? 'Project Manager' : 'Contributor'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="mt-4">
+                                            <div className="flex justify-between text-sm">
+                                                <span>Tasks: {member.completedTasks}/{member.totalTasks}</span>
+                                                <span>{member.totalTasks > 0 ? Math.round((member.completedTasks / member.totalTasks) * 100) : 0}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-600 rounded-full h-2 mt-1">
+                                                <div 
+                                                    className="bg-green-500 h-2 rounded-full" 
+                                                    style={{ width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                            <div className="text-center p-2 bg-indigo-900/50 rounded">
+                                                <div className="font-medium text-indigo-300">{member.inProgressTasks}</div>
+                                                <div className="text-slate-400">In Progress</div>
+                                            </div>
+                                            <div className="text-center p-2 bg-slate-600 rounded">
+                                                <div className="font-medium text-slate-300">{member.todoTasks}</div>
+                                                <div className="text-slate-400">To Do</div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="mt-4">
-                                        <div className="flex justify-between text-sm">
-                                            <span>Tasks: {member.completedTasks}/{member.totalTasks}</span>
-                                            <span>{member.totalTasks > 0 ? Math.round((member.completedTasks / member.totalTasks) * 100) : 0}%</span>
-                                        </div>
-                                        <div className="w-full bg-slate-600 rounded-full h-2 mt-1">
-                                            <div 
-                                                className="bg-green-500 h-2 rounded-full" 
-                                                style={{ width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                                        <div className="text-center p-2 bg-indigo-900/50 rounded">
-                                            <div className="font-medium text-indigo-300">{member.inProgressTasks}</div>
-                                            <div className="text-slate-400">In Progress</div>
-                                        </div>
-                                        <div className="text-center p-2 bg-slate-600 rounded">
-                                            <div className="font-medium text-slate-300">{member.todoTasks}</div>
-                                            <div className="text-slate-400">To Do</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
