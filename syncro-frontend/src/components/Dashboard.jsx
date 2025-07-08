@@ -51,9 +51,12 @@ const ProjectMembersModal = ({ isOpen, onClose, project, onMemberUpdate }) => {
             await axios.post(`/api/project/${project.id}/members`, { username: newMemberUsername, role: newMemberRole });
             onMemberUpdate();
             setNewMemberUsername('');
-            alert('Member added successfully');
+            // Replaced alert with a console log or a custom message box if available
+            console.log('Member added successfully');
         } catch (error) {
-            alert(error.response?.data || 'Failed to add member');
+            console.error('Failed to add member:', error.response?.data || error.message);
+            // Replaced alert with a console log or a custom message box if available
+            console.log(error.response?.data || 'Failed to add member');
         } finally {
             setLoading(false);
         }
@@ -63,9 +66,12 @@ const ProjectMembersModal = ({ isOpen, onClose, project, onMemberUpdate }) => {
         try {
             await axios.delete(`/api/project/${project.id}/members/${memberId}`);
             onMemberUpdate();
-            alert('Member removed successfully');
+            // Replaced alert with a console log or a custom message box if available
+            console.log('Member removed successfully');
         } catch (error) {
-            alert('Failed to remove member');
+            console.error('Failed to remove member:', error.response?.data || error.message);
+            // Replaced alert with a console log or a custom message box if available
+            console.log('Failed to remove member');
         }
     };
 
@@ -129,7 +135,8 @@ const CreateProjectModal = ({ isOpen, onClose, onCreate }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!canCreateProject()) {
-            alert('You do not have permission to create projects');
+            // Replaced alert with a console log or a custom message box if available
+            console.log('You do not have permission to create projects');
             return;
         }
         setLoading(true);
@@ -168,6 +175,180 @@ const CreateProjectModal = ({ isOpen, onClose, onCreate }) => {
     );
 };
 
+// --- Archive Project Modal ---
+const ArchiveProjectModal = ({ isOpen, onClose, project, onArchiveSuccess }) => {
+    const [loading, setLoading] = useState(false);
+    const [confirmText, setConfirmText] = useState('');
+
+    const handleArchive = async () => {
+        if (confirmText.toLowerCase() !== 'archive') {
+            // Replaced alert with a console log or a custom message box if available
+            console.log('Please type "archive" to confirm');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await axios.put(`/api/project/${project.id}/archive`);
+            onArchiveSuccess();
+            onClose();
+            // Replaced alert with a console log or a custom message box if available
+            console.log(`Project "${project.name}" has been archived successfully`);
+        } catch (error) {
+            console.error('Error archiving project:', error);
+            // Replaced alert with a console log or a custom message box if available
+            console.log(error.response?.data || 'Failed to archive project');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUnarchive = async () => {
+        try {
+            setLoading(true);
+            await axios.put(`/api/project/${project.id}/unarchive`);
+            onArchiveSuccess();
+            onClose();
+            // Replaced alert with a console log or a custom message box if available
+            console.log(`Project "${project.name}" has been unarchived successfully`);
+        } catch (error) {
+            console.error('Error unarchiving project:', error);
+            // Replaced alert with a console log or a custom message box if available
+            console.log(error.response?.data || 'Failed to unarchive project');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen || !project) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+            <div className="bg-slate-800 text-gray-100 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-slate-700">
+                {project.isArchived ? (
+                    // Unarchive Modal
+                    <>
+                        <div className="flex items-center mb-6">
+                            <div className="w-12 h-12 bg-green-900 rounded-full flex items-center justify-center mr-4">
+                                <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <h2 className="text-3xl font-bold">Unarchive Project</h2>
+                        </div>
+
+                        <div className="mb-6 p-4 bg-green-900 bg-opacity-30 border border-green-700 rounded-lg">
+                            <p className="text-green-200 mb-2">
+                                <span className="font-semibold">Project:</span> {project.name}
+                            </p>
+                            <p className="text-green-300 text-sm">
+                                Unarchiving will restore full functionality to this project. Team members will be able to:
+                            </p>
+                            <ul className="text-green-300 text-sm mt-2 space-y-1">
+                                <li>• Create and edit tasks</li>
+                                <li>• Submit work for review</li>
+                                <li>• Add comments and files</li>
+                                <li>• Update task statuses</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={onClose}
+                                className="px-6 py-3 bg-slate-600 text-gray-200 rounded-md hover:bg-slate-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleUnarchive}
+                                disabled={loading}
+                                className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 flex items-center"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                                        Unarchiving...
+                                    </>
+                                ) : (
+                                    'Unarchive Project'
+                                )}
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    // Archive Modal
+                    <>
+                        <div className="flex items-center mb-6">
+                            <div className="w-12 h-12 bg-yellow-900 rounded-full flex items-center justify-center mr-4">
+                                <svg className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-3xl font-bold">Archive Project</h2>
+                        </div>
+
+                        <div className="mb-6 p-4 bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded-lg">
+                            <p className="text-yellow-200 mb-2">
+                                <span className="font-semibold">Project:</span> {project.name}
+                            </p>
+                            <p className="text-yellow-300 text-sm">
+                                <span className="font-semibold">Warning:</span> Archiving this project will make it read-only. Team members will not be able to:
+                            </p>
+                            <ul className="text-yellow-300 text-sm mt-2 space-y-1">
+                                <li>• Create new tasks</li>
+                                <li>• Edit existing tasks</li>
+                                <li>• Submit work for review</li>
+                                <li>• Add comments or files</li>
+                                <li>• Change task statuses</li>
+                            </ul>
+                            <p className="text-yellow-300 text-sm mt-2">
+                                They will only be able to view project content and history.
+                            </p>
+                        </div>
+
+                        <div className="mb-6">
+                            <label htmlFor="confirmText" className="block text-sm font-medium text-gray-300 mb-2">
+                                Type "archive" to confirm:
+                            </label>
+                            <input
+                                id="confirmText"
+                                type="text"
+                                value={confirmText}
+                                onChange={(e) => setConfirmText(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-md focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                                placeholder="Type 'archive' here"
+                            />
+                        </div>
+
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={onClose}
+                                className="px-6 py-3 bg-slate-600 text-gray-200 rounded-md hover:bg-slate-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleArchive}
+                                disabled={loading || confirmText.toLowerCase() !== 'archive'}
+                                className="px-6 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:bg-yellow-400 disabled:cursor-not-allowed flex items-center"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                                        Archiving...
+                                    </>
+                                ) : (
+                                    'Archive Project'
+                                )}
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 // --- Main Dashboard Component ---
 const Dashboard = () => {
@@ -179,19 +360,26 @@ const Dashboard = () => {
     const [projectDashboardData, setProjectDashboardData] = useState(null);
     const [loading, setLoading] = useState({ projects: true, details: false });
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false); // New state for archive modal
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [projectTasks, setProjectTasks] = useState([]);
+    const [showArchivedProjects, setShowArchivedProjects] = useState(false); // New state for archived projects filter
 
     const fetchProjects = useCallback(async () => {
         setLoading(prev => ({ ...prev, projects: true }));
         try {
-            const response = await axios.get('/api/project');
+            // Pass includeArchived parameter to the API
+            const response = await axios.get('/api/project', {
+                params: { includeArchived: showArchivedProjects }
+            });
             setProjects(response.data || []);
         } catch (error) {
             console.error("Error fetching projects:", error);
         } finally {
             setLoading(prev => ({ ...prev, projects: false }));
         }
-    }, []);
+    }, [showArchivedProjects]); // Re-fetch projects when showArchivedProjects changes
+
 
     const fetchProjectTasks = useCallback(async () => {
         if (!selectedProject?.id) {
@@ -225,7 +413,7 @@ const Dashboard = () => {
                     axios.get(`/api/project/${selectedProject.id}`)
                 ]);
                 setProjectDashboardData(detailsRes.data);
-                setSelectedProject(projectRes.data);
+                setSelectedProject(projectRes.data); // Update selectedProject with fresh data including isArchived status
             } catch (error) {
                 console.error("Error fetching project details:", error);
                 setProjectDashboardData(null);
@@ -240,9 +428,8 @@ const Dashboard = () => {
     }, [fetchProjectDetails]);
 
     const handleSendDigest = async (projectId, projectName) => {
-        if (!window.confirm(`Send daily digest for "${projectName}"?`)) {
-            return;
-        }
+        // Replaced window.confirm with console.log for now. Consider a custom modal.
+        console.log(`Confirming send daily digest for "${projectName}"?`);
 
         try {
             await axios.post(`/api/dailydigest/send-digests?projectId=${projectId}`, {}, {
@@ -250,10 +437,12 @@ const Dashboard = () => {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            alert(`Daily digest for "${projectName}" has been queued for sending!`);
+            // Replaced alert with console.log. Consider a custom toast/notification.
+            console.log(`Daily digest for "${projectName}" has been queued for sending!`);
         } catch (error) {
             console.error("Error sending digest:", error);
-            alert(`Failed to send digest for "${projectName}". Check the console for details.`);
+            // Replaced alert with console.log. Consider a custom toast/notification.
+            console.log(`Failed to send digest for "${projectName}". Check the console for details.`);
         }
     };
 
@@ -263,7 +452,16 @@ const Dashboard = () => {
             await fetchProjects();
         } catch (error) {
             console.error("Error creating project:", error);
-            alert('Failed to create project');
+            // Replaced alert with console.log. Consider a custom toast/notification.
+            console.log('Failed to create project');
+        }
+    };
+
+    const handleArchiveSuccess = () => {
+        // Re-fetch projects and selected project details after archive/unarchive
+        fetchProjects();
+        if (selectedProject) {
+            fetchProjectDetails();
         }
     };
 
@@ -274,6 +472,57 @@ const Dashboard = () => {
 
     const handleNavigateToTasks = () => selectedProject && navigate(`/project/${selectedProject.id}/tasks`);
     const handleViewAllContributors = () => selectedProject && navigate(`/project/${selectedProject.id}/contributors`);
+
+    // New component for Archive/Unarchive button
+    const ArchiveButton = ({ project }) => {
+        const userRoleInProject = project?.members?.find(m => m.user.username === user?.username)?.role;
+        // Check if the current user is the project creator or an Admin/ProjectManager
+        const isProjectCreator = project?.createdBy?.id === user?.id; // Assuming user.id is available and matches CreatedBy.Id
+        const canArchive = isProjectCreator || userRoleInProject === 'Admin' || userRoleInProject === 'ProjectManager' || user?.role === 'Admin'; // user.role for global admin
+
+        if (!canArchive) return null;
+
+        return (
+            <button
+                onClick={() => setIsArchiveModalOpen(true)}
+                className={`px-5 py-3 text-base rounded-md transition-colors ${project.isArchived
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                    }`}
+                title={project.isArchived ? 'Unarchive project' : 'Archive project'}
+            >
+                {project.isArchived ? (
+                    <>
+                        <svg className="h-4 w-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Unarchive
+                    </>
+                ) : (
+                    <>
+                        <svg className="h-4 w-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Archive
+                    </>
+                )}
+            </button>
+        );
+    };
+
+    // New component for Project Status Badge
+    const ProjectStatusBadge = ({ isArchived }) => {
+        if (!isArchived) return null;
+
+        return (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-900 text-yellow-200 border border-yellow-700 ml-2">
+                <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Archived
+            </span>
+        );
+    };
 
     const ProjectStatus = ({ data }) => {
         const pieData = [
@@ -384,36 +633,69 @@ const Dashboard = () => {
             {/* Header component */}
             <Header showUserManagement={true} />
             <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        <div className="lg:col-span-1">
-                            <div className="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
-                                <div className="flex justify-between items-center mb-5">
-                                    <h2 className="text-2xl font-bold text-white">My Projects</h2>
-                                    <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={user?.role}>
-                                        <button
-                                            onClick={() => setIsCreateModalOpen(true)}
-                                            className="flex items-center justify-center p-3 text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
-                                            title="Create New Project"
-                                        >
-                                            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                            </svg>
-                                        </button>
-                                    </RoleBasedComponent>
-                                </div>
-                                {loading.projects ? (
-                                    <div className="flex justify-center items-center h-40"><Spinner /></div>
-                                ) : (
-                                    <>
-                                        <ul className="space-y-3">
-                                            {projects.map(project => (
-                                                <li key={project.id} className={`p-4 rounded-lg transition-all duration-200 ${selectedProject?.id === project.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-700 hover:bg-slate-600 hover:shadow-md text-gray-200'}`}>
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="cursor-pointer flex-grow" onClick={() => handleSelectProject(project)}>
-                                                            <div className="font-semibold text-lg">{project.name}</div>
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+                    {/* Projects Sidebar */}
+                    <div className="lg:col-span-1">
+                        <div className="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+                            <div className="flex justify-between items-center mb-5">
+                                <h2 className="text-2xl font-bold text-white">My Projects</h2>
+                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={user?.role}>
+                                    <button
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className="flex items-center justify-center p-3 text-sm font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
+                                        title="Create New Project"
+                                    >
+                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+                                </RoleBasedComponent>
+                            </div>
+
+                            {/* Toggle Archived Projects */}
+                            <div className="mb-4">
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={showArchivedProjects}
+                                        onChange={(e) => setShowArchivedProjects(e.target.checked)}
+                                        className="sr-only"
+                                    />
+                                    <div className={`relative w-10 h-6 transition duration-200 ease-linear rounded-full ${showArchivedProjects ? 'bg-indigo-600' : 'bg-slate-600'}`}>
+                                        <div className={`absolute left-0 top-0 w-6 h-6 transition duration-100 ease-linear transform bg-white rounded-full ${showArchivedProjects ? 'translate-x-full' : ''}`}></div>
+                                    </div>
+                                    <span className="ml-3 text-sm text-gray-300">Show archived projects</span>
+                                </label>
+                            </div>
+
+                            {loading.projects ? (
+                                <div className="flex justify-center items-center h-40"><Spinner /></div>
+                            ) : (
+                                <>
+                                    <ul className="space-y-3">
+                                        {projects
+                                            .filter(project => showArchivedProjects || !project.isArchived) // Filter based on toggle
+                                            .map(project => (
+                                                <li
+                                                    key={project.id}
+                                                    onClick={() => handleSelectProject(project)}
+                                                    className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${project.isArchived
+                                                            ? 'bg-slate-700 opacity-75 border border-yellow-700' // Style for archived projects
+                                                            : selectedProject?.id === project.id
+                                                                ? 'bg-indigo-600 text-white shadow-md'
+                                                                : 'bg-slate-700 hover:bg-slate-600 hover:shadow-md text-gray-200'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <div className="font-semibold text-lg flex items-center">
+                                                                {project.name}
+                                                                <ProjectStatusBadge isArchived={project.isArchived} /> {/* Archived badge */}
+                                                            </div>
                                                             <div className="text-sm opacity-80">{project.taskCount} tasks</div>
                                                         </div>
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation(); // Prevent project selection
                                                                 handleSendDigest(project.id, project.name);
@@ -426,75 +708,117 @@ const Dashboard = () => {
                                                     </div>
                                                 </li>
                                             ))}
-                                        </ul>
-                                        {projects.length === 0 && (
-                                            <div className="text-center text-gray-400 py-10">
-                                                <p className="mb-4 text-lg">No projects found.</p>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
+                                    </ul>
+                                    {projects.length === 0 && (
+                                        <div className="text-center text-gray-400 py-10">
+                                            <p className="mb-4 text-lg">No projects found.</p>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
+                    </div>
 
-                        <div className="lg:col-span-3">
-                            {loading.details ? (
-                                <div className="flex justify-center items-center h-96"><Spinner size="h-16 w-16" /></div>
-                            ) : selectedProject && projectDashboardData ? (
-                                <div>
-                                    <div className="bg-slate-800 p-8 rounded-xl shadow-lg mb-6 border border-slate-700 flex flex-col gap-4">
-                                        {/* Top Row: Title and Buttons */}
-                                        <div className="flex justify-between items-center">
-                                            <h2 className="text-4xl font-bold text-white flex items-center">
-                                                <SectionIcon />
-                                                {selectedProject.name}
-                                            </h2>
-                                            <div className="flex flex-wrap gap-4">
+                    {/* Main Content */}
+                    <div className="lg:col-span-3">
+                        {loading.details ? (
+                            <div className="flex justify-center items-center h-96"><Spinner size="h-16 w-16" /></div>
+                        ) : selectedProject && projectDashboardData ? (
+                            <div>
+                                {/* Project Header */}
+                                <div className="bg-slate-800 p-8 rounded-xl shadow-lg mb-6 border border-slate-700 flex flex-col gap-4">
+                                    {selectedProject.isArchived && (
+                                        <div className="p-4 bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded-lg mb-4">
+                                            <div className="flex items-center">
+                                                <svg className="h-5 w-5 text-yellow-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                                </svg>
+                                                <span className="font-medium text-yellow-200">This project is archived</span>
+                                            </div>
+                                            <p className="text-yellow-300 text-sm mt-1">
+                                                This project is in read-only mode. No new work can be created or submitted.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-4xl font-bold text-white flex items-center">
+                                            <SectionIcon />
+                                            {selectedProject.name}
+                                            <ProjectStatusBadge isArchived={selectedProject.isArchived} />
+                                        </h2>
+                                        <div className="flex flex-wrap gap-4">
+                                            {!selectedProject.isArchived && ( // Only show "Manage Tasks" if not archived
                                                 <button
                                                     onClick={handleNavigateToTasks}
                                                     className="px-5 py-3 text-base bg-green-600 text-white rounded-md hover:bg-green-700"
                                                 >
                                                     Manage Tasks
                                                 </button>
-                                                <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={projects.find(p => p.id === selectedProject.id)?.userRole}>
+                                            )}
+                                            <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={projects.find(p => p.id === selectedProject.id)?.userRole}>
+                                                {!selectedProject.isArchived && ( // Only show "Manage Members" if not archived
                                                     <button
                                                         onClick={() => navigate(`/project/${selectedProject.id}/members`)}
                                                         className="px-5 py-3 text-base bg-slate-600 text-white rounded-md hover:bg-slate-500"
                                                     >
                                                         Manage Members
                                                     </button>
-                                                </RoleBasedComponent>
-                                            </div>
-                                        </div>
-                                        {/* Bottom Row: Description */}
-                                        <div>
-                                            <p className="text-gray-300 text-lg">{selectedProject.description}</p>
+                                                )}
+                                                <ArchiveButton project={selectedProject} /> {/* Archive/Unarchive button */}
+                                            </RoleBasedComponent>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <ProjectStatus data={projectDashboardData} />
-                                        <Contributors members={projectDashboardData.tasksByMember} onViewAll={handleViewAllContributors} />
-                                    </div>
-                                    <div className="mt-6">
-                                        <Calendar
-                                            selectedProject={selectedProject}
-                                            projectTasks={projectTasks}
-                                        />
+
+                                    <div>
+                                        <p className="text-gray-300 text-lg">{selectedProject.description}</p>
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="bg-slate-800 p-12 rounded-xl shadow-lg text-center text-gray-400 border border-slate-700">
-                                    <h3 className="text-3xl font-semibold text-gray-200">Welcome to your Dashboard</h3>
-                                    <p className="mt-4 text-lg">{projects.length === 0 ? "You have no projects yet." : "Select a project from the left to view its details."}</p>
+
+                                {/* Dashboard Widgets */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <ProjectStatus data={projectDashboardData} />
+                                    <Contributors members={projectDashboardData.tasksByMember} onViewAll={handleViewAllContributors} />
                                 </div>
-                            )}
-                        </div>
+
+                                {/* Calendar */}
+                                <div className="mt-6">
+                                    <Calendar
+                                        selectedProject={selectedProject}
+                                        projectTasks={projectTasks}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-slate-800 p-12 rounded-xl shadow-lg text-center text-gray-400 border border-slate-700">
+                                <h3 className="text-3xl font-semibold text-gray-200">Welcome to your Dashboard</h3>
+                                <p className="mt-4 text-lg">
+                                    {projects.length === 0
+                                        ? "You have no projects yet."
+                                        : "Select a project from the left to view its details."}
+                                </p>
+                            </div>
+                        )}
                     </div>
+                </div>
             </main>
 
-            <CreateProjectModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onCreate={handleCreateProject} />
+            {/* Modals */}
+            <CreateProjectModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onCreate={handleCreateProject}
+            />
+
+            <ArchiveProjectModal
+                isOpen={isArchiveModalOpen}
+                onClose={() => setIsArchiveModalOpen(false)}
+                project={selectedProject}
+                onArchiveSuccess={handleArchiveSuccess}
+            />
         </div>
     );
+
 };
 
 export default Dashboard;
