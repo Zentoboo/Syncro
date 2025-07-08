@@ -249,7 +249,7 @@ namespace syncroAPI.Controllers
 
             return Ok(response);
         }
-        
+
         [HttpGet("search-users")]
         public async Task<ActionResult<IEnumerable<UserSearchResponse>>> SearchUsers([FromQuery] string q)
         {

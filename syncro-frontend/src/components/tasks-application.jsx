@@ -100,7 +100,7 @@ const TaskModal = ({ isOpen, onClose, onSave, projectMembers, existingTask = nul
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+        <div className="fixed inset-0 bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
             <div className="bg-slate-800 p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-white">

@@ -40,7 +40,6 @@ namespace syncroAPI.Controllers
         }
 
         [HttpPost("upload/{taskId}")]
-        [ApiExplorerSettings(IgnoreApi = true)] // INCOMPATIBILITY? SOME ISSUE WITH THIS IDK
         public async Task<ActionResult<TaskAttachmentResponse>> UploadFile(int taskId, [FromForm] IFormFile file)
         {
             var userId = GetCurrentUserId();
