@@ -13,6 +13,7 @@ import ProjectMembers from './components/ProjectMembers';
 import NotificationsPage from './components/NotificationsPage';
 import Breadcrumb from './components/Breadcrumb';
 import About from './components/About';
+import UserManagement from './components/UserManagement';
 
 const Unauthorized = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -178,24 +179,33 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-            {/* Project Members Management Route */}
-            <Route
-              path="/project/:projectId/members"
-              element={
-                <ProtectedRoute>
-                  <ProjectMembers />
-                </ProtectedRoute>
-              }
-            />
-            {/* About routes */}
-            <Route
-              path="/about"
-              element={
-              <ProtectedRoute>
-                <About />
-              </ProtectedRoute>
-              }
-            />
+              {/* Project Members Management Route */}
+              <Route
+                path="/project/:projectId/members"
+                element={
+                  <ProtectedRoute>
+                    <ProjectMembers />
+                  </ProtectedRoute>
+                }
+              />
+              {/* About routes */}
+              <Route
+                path="/about"
+                element={
+                  <ProtectedRoute>
+                    <About />
+                  </ProtectedRoute>
+                }
+              />
+              {/* About routes */}
+              <Route
+                path="/user-management"
+                element={
+                  <ProtectedRoute requiredRole="Admin">
+                        <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Admin only route */}
               <Route

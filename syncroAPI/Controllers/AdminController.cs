@@ -37,27 +37,29 @@ namespace syncroAPI.Controllers
             if (GetCurrentUserRole() != "Admin")
                 return Forbid("Only admins can access user management");
             
-            var query = _context.Users
-            .Where(u => u.IsActive);
+            var query = _context.Users.AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(search)) // <-- New: filter by search if provided
+            // Enhanced search functionality - search by username OR email
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                search = search.ToLower();
-                query = query.Where(u => u.Username.ToLower().StartsWith(search)); // <-- Match usernames starting with search term
+                search = search.ToLower().Trim();
+                query = query.Where(u => 
+                    u.Username.ToLower().Contains(search) || 
+                    u.Email.ToLower().Contains(search));
             }
 
-           var users = await query
-            .Select(u => new UserSummaryResponse
-            {
-                Id = u.Id,
-                Username = u.Username,
-                Email = u.Email,
-                Role = u.Role,
-                CreatedAt = u.CreatedAt,
-                IsActive = u.IsActive
-            })
-            .OrderBy(u => u.Username)
-            .ToListAsync();
+            var users = await query
+                .Select(u => new UserSummaryResponse
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    Role = u.Role,
+                    CreatedAt = u.CreatedAt,
+                    IsActive = u.IsActive
+                })
+                .OrderBy(u => u.Username)
+                .ToListAsync();
 
             return Ok(users);
         }
@@ -73,20 +75,67 @@ namespace syncroAPI.Controllers
             if (user == null)
                 return NotFound("User not found");
 
-            // Validate role
-            var validRoles = new[] { "Admin", "ProjectManager", "Contributor" };
+            // Validate role - Only allow ProjectManager and Contributor
+            var validRoles = new[] { "ProjectManager", "Contributor" };
             if (!validRoles.Contains(request.Role))
-                return BadRequest("Invalid role specified");
+                return BadRequest("Invalid role specified. Only ProjectManager and Contributor roles are allowed.");
 
-            // Prevent admin from demoting themselves
+            // Prevent admin from changing their own role
             var currentUserId = GetCurrentUserId();
-            if (userId == currentUserId && request.Role != "Admin")
-                return BadRequest("You cannot change your own admin role");
+            if (userId == currentUserId)
+                return BadRequest("You cannot change your own role");
+
+            // Prevent changing other admin's roles
+            if (user.Role == "Admin")
+                return BadRequest("Cannot change the role of an admin user");
 
             user.Role = request.Role;
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "User role updated successfully" });
+        }
+
+        [HttpPut("users/{userId}/ban")]
+        public async Task<IActionResult> BanUser(int userId)
+        {
+            // Only admins can ban users
+            if (GetCurrentUserRole() != "Admin")
+                return Forbid("Only admins can ban users");
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound("User not found");
+
+            // Prevent admin from banning themselves
+            var currentUserId = GetCurrentUserId();
+            if (userId == currentUserId)
+                return BadRequest("You cannot ban yourself");
+
+            // Prevent banning other admins
+            if (user.Role == "Admin")
+                return BadRequest("Cannot ban an admin user");
+
+            user.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"User '{user.Username}' has been banned successfully" });
+        }
+
+        [HttpPut("users/{userId}/unban")]
+        public async Task<IActionResult> UnbanUser(int userId)
+        {
+            // Only admins can unban users
+            if (GetCurrentUserRole() != "Admin")
+                return Forbid("Only admins can unban users");
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return NotFound("User not found");
+
+            user.IsActive = true;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"User '{user.Username}' has been unbanned successfully" });
         }
 
         [HttpGet("users/{userId}")]
@@ -122,28 +171,6 @@ namespace syncroAPI.Controllers
             return Ok(response);
         }
 
-        [HttpPut("users/{userId}/status")]
-        public async Task<IActionResult> UpdateUserStatus(int userId, [FromBody] UpdateUserStatusRequest request)
-        {
-            // Only admins can activate/deactivate users
-            if (GetCurrentUserRole() != "Admin")
-                return Forbid("Only admins can change user status");
-
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return NotFound("User not found");
-
-            // Prevent admin from deactivating themselves
-            var currentUserId = GetCurrentUserId();
-            if (userId == currentUserId && !request.IsActive)
-                return BadRequest("You cannot deactivate your own account");
-
-            user.IsActive = request.IsActive;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = $"User {(request.IsActive ? "activated" : "deactivated")} successfully" });
-        }
-
         [HttpGet("statistics")]
         public async Task<ActionResult<AdminStatisticsResponse>> GetAdminStatistics()
         {
@@ -151,7 +178,9 @@ namespace syncroAPI.Controllers
             if (GetCurrentUserRole() != "Admin")
                 return Forbid("Only admins can access statistics");
 
-            var totalUsers = await _context.Users.CountAsync(u => u.IsActive);
+            var totalUsers = await _context.Users.CountAsync();
+            var activeUsers = await _context.Users.CountAsync(u => u.IsActive);
+            var bannedUsers = await _context.Users.CountAsync(u => !u.IsActive);
             var totalProjects = await _context.Projects.CountAsync();
             var totalTasks = await _context.Tasks.CountAsync();
             var activeProjects = await _context.Projects.CountAsync(p => !p.IsArchived);
@@ -172,6 +201,8 @@ namespace syncroAPI.Controllers
             var response = new AdminStatisticsResponse
             {
                 TotalUsers = totalUsers,
+                ActiveUsers = activeUsers,
+                BannedUsers = bannedUsers,
                 TotalProjects = totalProjects,
                 TotalTasks = totalTasks,
                 ActiveProjects = activeProjects,
@@ -189,11 +220,6 @@ namespace syncroAPI.Controllers
         public string Role { get; set; } = string.Empty;
     }
 
-    public class UpdateUserStatusRequest
-    {
-        public bool IsActive { get; set; }
-    }
-
     public class UserDetailResponse : UserSummaryResponse
     {
         public DateTime CreatedAt { get; set; }
@@ -207,6 +233,8 @@ namespace syncroAPI.Controllers
     public class AdminStatisticsResponse
     {
         public int TotalUsers { get; set; }
+        public int ActiveUsers { get; set; }
+        public int BannedUsers { get; set; }
         public int TotalProjects { get; set; }
         public int TotalTasks { get; set; }
         public int ActiveProjects { get; set; }

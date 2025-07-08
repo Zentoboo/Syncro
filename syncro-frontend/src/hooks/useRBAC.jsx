@@ -65,13 +65,33 @@ export const useRBAC = () => {
         return 'Contributor';
     };
 
-    const canPromoteUser = (targetUserRole) => {
+    // Enhanced permission functions for user management
+    const canPromoteUser = (targetUserRole = null) => {
         // Only admins can change user roles
+        // Cannot change admin users' roles
+        return isAdmin() && targetUserRole !== 'Admin';
+    };
+
+    const canBanUser = (targetUserRole = null) => {
+        // Only admins can ban users
+        // Cannot ban other admin users
+        return isAdmin() && targetUserRole !== 'Admin';
+    };
+
+    const canUnbanUser = () => {
+        // Only admins can unban users
         return isAdmin();
     };
-    const canDeleteUser = (targetUserRole) => {
-        // Only admins can delete user 
-        return isAdmin();
+
+    // Check if a role change is valid (only ProjectManager and Contributor allowed)
+    const isValidRoleChange = (newRole) => {
+        const allowedRoles = ['ProjectManager', 'Contributor'];
+        return allowedRoles.includes(newRole);
+    };
+
+    // Check if user can search for other users
+    const canSearchUsers = () => {
+        return isAdmin() || isProjectManager();
     };
 
     return {
@@ -90,7 +110,10 @@ export const useRBAC = () => {
         canDeleteTasks,
         canViewProject,
         canPromoteUser,
-        canDeleteUser,
+        canBanUser,
+        canUnbanUser,
+        canSearchUsers,
+        isValidRoleChange,
         getMaxRole
     };
 };
