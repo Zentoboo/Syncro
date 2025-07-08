@@ -10,4 +10,12 @@ namespace syncroAPI.Models.DTOs
         public int? ProjectId { get; set; }
         public string TriggeredByUsername { get; set; } = string.Empty;
     }
+
+    public class EmailNotificationRequest
+    {
+        public string? From { get; set; } // This was the missing property
+        public string? To { get; set; }
+        public string? Subject { get; set; }
+        public string? Body { get; set; }
+    }
 }

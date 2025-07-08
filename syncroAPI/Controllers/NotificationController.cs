@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using syncroAPI.Data;
 using syncroAPI.Models.DTOs;
+using syncroAPI.Services;
 
 namespace syncroAPI.Controllers
 {
@@ -13,15 +14,30 @@ namespace syncroAPI.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public NotificationController(ApplicationDbContext context)
+        public NotificationController(ApplicationDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         private int GetCurrentUserId()
         {
             return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        }
+
+        [HttpPost("send-email")]
+        public async Task<IActionResult> SendEmailNotification([FromBody] Models.DTOs.EmailNotificationRequest request)
+        {
+            // Add validation for the request
+            if (request == null || string.IsNullOrWhiteSpace(request.To) || string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.Body))
+            {
+                return BadRequest("Email request is missing required fields.");
+            }
+        
+            await _emailService.SendEmailAsync(request);
+            return Ok(new { message = "Email sent successfully." });
         }
 
         [HttpGet]
@@ -77,7 +93,7 @@ namespace syncroAPI.Controllers
             var notification = await _context.Notifications
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
-            if (notification == null) 
+            if (notification == null)
                 return NotFound("Notification not found");
 
             if (!notification.IsRead)
@@ -127,7 +143,7 @@ namespace syncroAPI.Controllers
         public async Task<IActionResult> BulkDeleteNotifications([FromBody] BulkDeleteRequest request)
         {
             var userId = GetCurrentUserId();
-            
+
             if (request.NotificationIds == null || !request.NotificationIds.Any())
                 return BadRequest("No notification IDs provided");
 
@@ -148,13 +164,13 @@ namespace syncroAPI.Controllers
         public async Task<IActionResult> BulkMarkAsRead([FromBody] BulkMarkAsReadRequest request)
         {
             var userId = GetCurrentUserId();
-            
+
             if (request.NotificationIds == null || !request.NotificationIds.Any())
                 return BadRequest("No notification IDs provided");
 
             var notifications = await _context.Notifications
-                .Where(n => n.UserId == userId && 
-                           request.NotificationIds.Contains(n.Id) && 
+                .Where(n => n.UserId == userId &&
+                           request.NotificationIds.Contains(n.Id) &&
                            !n.IsRead)
                 .ToListAsync();
 
@@ -172,7 +188,7 @@ namespace syncroAPI.Controllers
         public async Task<ActionResult<NotificationStatisticsResponse>> GetNotificationStatistics()
         {
             var userId = GetCurrentUserId();
-            
+
             var totalCount = await _context.Notifications.CountAsync(n => n.UserId == userId);
             var unreadCount = await _context.Notifications.CountAsync(n => n.UserId == userId && !n.IsRead);
             var readCount = totalCount - unreadCount;
