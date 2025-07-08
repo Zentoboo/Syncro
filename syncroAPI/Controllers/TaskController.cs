@@ -5,6 +5,7 @@ using System.Security.Claims;
 using syncroAPI.Data;
 using syncroAPI.Models;
 using syncroAPI.Models.DTOs;
+using System.Text.RegularExpressions; // For mention parsing
 
 namespace syncroAPI.Controllers
 {
@@ -61,45 +62,45 @@ namespace syncroAPI.Controllers
                 query = query.Where(t => t.AssignedToUserId == userId);
 
             var tasks = await query
-        .Where(t => t.ParentTaskId == null) // Only main tasks, not subtasks
-        .Select(t => new TaskSummaryResponse
-        {
-            Id = t.Id,
-            Title = t.Title,
-            Description = t.Description,
-            Status = t.Status,
-            Priority = t.Priority,
-            DueDate = t.DueDate,
-            AssignedTo = t.AssignedTo != null ? new UserSummaryResponse
-            {
-                Id = t.AssignedTo.Id,
-                Username = t.AssignedTo.Username,
-                Email = t.AssignedTo.Email
-            } : null,
-            ProjectName = t.Project.Name,
-            SubTaskCount = t.SubTasks.Count,
-            CompletedSubTaskCount = t.SubTasks.Count(st => st.Status == Models.TaskStatus.Done),
+                .Where(t => t.ParentTaskId == null) // Only main tasks, not subtasks
+                .Select(t => new TaskSummaryResponse
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Status = t.Status,
+                    Priority = t.Priority,
+                    DueDate = t.DueDate,
+                    AssignedTo = t.AssignedTo != null ? new UserSummaryResponse
+                    {
+                        Id = t.AssignedTo.Id,
+                        Username = t.AssignedTo.Username,
+                        Email = t.AssignedTo.Email
+                    } : null,
+                    ProjectName = t.Project.Name,
+                    SubTaskCount = t.SubTasks.Count,
+                    CompletedSubTaskCount = t.SubTasks.Count(st => st.Status == Models.TaskStatus.Done),
 
-            // Map the comments to the DTO
-            Comments = t.Comments.OrderByDescending(c => c.CreatedAt).Select(c => new TaskCommentResponse
-            {
-                Id = c.Id,
-                Content = c.Content,
-                CreatedAt = c.CreatedAt,
-                User = new UserSummaryResponse { Id = c.User.Id, Username = c.User.Username }
-            }).ToList(),
+                    // Map the comments to the DTO
+                    Comments = t.Comments.OrderByDescending(c => c.CreatedAt).Select(c => new TaskCommentResponse
+                    {
+                        Id = c.Id,
+                        Content = c.Content,
+                        CreatedAt = c.CreatedAt,
+                        User = new UserSummaryResponse { Id = c.User.Id, Username = c.User.Username }
+                    }).ToList(),
 
-            // Map the attachments to the DTO
-            Attachments = t.Attachments.Select(a => new TaskAttachmentResponse
-            {
-                Id = a.Id,
-                FileName = a.FileName,
-                UploadedBy = new UserSummaryResponse { Id = a.UploadedBy.Id, Username = a.UploadedBy.Username }
-            }).ToList()
-        })
-        .OrderByDescending(t => t.Priority)
-        .ThenBy(t => t.DueDate)
-        .ToListAsync();
+                    // Map the attachments to the DTO
+                    Attachments = t.Attachments.Select(a => new TaskAttachmentResponse
+                    {
+                        Id = a.Id,
+                        FileName = a.FileName,
+                        UploadedBy = new UserSummaryResponse { Id = a.UploadedBy.Id, Username = a.UploadedBy.Username }
+                    }).ToList()
+                })
+                .OrderByDescending(t => t.Priority)
+                .ThenBy(t => t.DueDate)
+                .ToListAsync();
 
             return Ok(tasks);
         }
@@ -254,21 +255,20 @@ namespace syncroAPI.Controllers
             };
 
             _context.Tasks.Add(task);
-            await _context.SaveChangesAsync(); // <-- STEP 1: Save the task to get its real ID
+            await _context.SaveChangesAsync();
 
-            // --- NOTIFICATION LOGIC ---
-            // Now that the task is saved, task.Id has a valid, non-zero value
+            // Task created and assigned notification
             if (task.AssignedToUserId.HasValue)
             {
                 var notification = new Notification
                 {
                     UserId = task.AssignedToUserId.Value,
                     Message = $"{user.Username} assigned you a new task: \"{task.Title}\"",
-                    RelatedTaskId = task.Id, // <-- This is now the correct, database-generated ID
+                    RelatedTaskId = task.Id,
                     TriggeredByUserId = userId
                 };
                 _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync(); // <-- STEP 2: Save the new notification
+                await _context.SaveChangesAsync();
             }
 
             return await GetTask(task.Id);
@@ -280,7 +280,6 @@ namespace syncroAPI.Controllers
             var userId = GetCurrentUserId();
             var user = await _context.Users.FindAsync(userId);
 
-            // FIX: Add a null check for the user initiating the action.
             if (user == null)
             {
                 return Unauthorized("User not found.");
@@ -289,6 +288,7 @@ namespace syncroAPI.Controllers
             var task = await _context.Tasks
                 .Include(t => t.Project)
                     .ThenInclude(p => p.ProjectMembers)
+                .Include(t => t.AssignedTo)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null) return NotFound("Task not found");
@@ -301,6 +301,7 @@ namespace syncroAPI.Controllers
             var newStatus = request.Status;
             var originalAssigneeId = task.AssignedToUserId;
 
+            // Handle status changes and permissions
             if (oldStatus != newStatus)
             {
                 bool isManager = userRole == "Admin" || userRole == "ProjectManager";
@@ -316,6 +317,7 @@ namespace syncroAPI.Controllers
                 else return Forbid("You do not have permission to make this status change.");
             }
 
+            // Validate assigned user if changed
             if (request.AssignedToUserId.HasValue && request.AssignedToUserId != task.AssignedToUserId)
             {
                 if (!task.Project.ProjectMembers.Any(pm => pm.UserId == request.AssignedToUserId.Value && pm.IsActive))
@@ -330,6 +332,8 @@ namespace syncroAPI.Controllers
             task.UpdatedAt = DateTime.UtcNow;
 
             // --- NOTIFICATION LOGIC ---
+
+            // 1. Task Re-assignment Notification (Only if assignee actually changes)
             if (request.AssignedToUserId.HasValue && request.AssignedToUserId != originalAssigneeId)
             {
                 var notification = new Notification
@@ -342,6 +346,7 @@ namespace syncroAPI.Controllers
                 _context.Notifications.Add(notification);
             }
 
+            // 2. Task Submitted for Review Notification
             if (newStatus == Models.TaskStatus.InReview && oldStatus != Models.TaskStatus.InReview)
             {
                 var managers = task.Project.ProjectMembers
@@ -361,22 +366,33 @@ namespace syncroAPI.Controllers
                 }
             }
 
-            await _context.SaveChangesAsync();
-
-            // --- NOTIFICATION LOGIC ---
-            // Now that the task is saved, task.Id has a valid, non-zero value
-            if (task.AssignedToUserId.HasValue)
+            // 3. Task Approved Notification (oldStatus was InReview, newStatus is Done, and there was an assignee)
+            if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.Done && originalAssigneeId.HasValue)
             {
                 var notification = new Notification
                 {
-                    UserId = task.AssignedToUserId.Value,
-                    Message = $"{user.Username} assigned you a new task: \"{task.Title}\"",
-                    RelatedTaskId = task.Id, // <-- This is now the correct, database-generated ID
+                    UserId = originalAssigneeId.Value,
+                    Message = $"{user.Username} approved your task: \"{task.Title}\"",
+                    RelatedTaskId = task.Id,
                     TriggeredByUserId = userId
                 };
                 _context.Notifications.Add(notification);
-                await _context.SaveChangesAsync(); // <-- STEP 2: Save the new notification
             }
+
+            // 4. Task Changes Requested Notification (Rejected) (oldStatus was InReview, newStatus is InProgress, and there was an assignee)
+            if (oldStatus == Models.TaskStatus.InReview && newStatus == Models.TaskStatus.InProgress && originalAssigneeId.HasValue)
+            {
+                var notification = new Notification
+                {
+                    UserId = originalAssigneeId.Value,
+                    Message = $"{user.Username} requested changes for your task: \"{task.Title}\"",
+                    RelatedTaskId = task.Id,
+                    TriggeredByUserId = userId
+                };
+                _context.Notifications.Add(notification);
+            }
+
+            await _context.SaveChangesAsync(); // Save all pending notifications and task changes
             return await GetTask(id);
         }
 
@@ -395,7 +411,7 @@ namespace syncroAPI.Controllers
             if (!hasAccess)
                 return Forbid("You don't have access to this project");
 
-            // *** NEW: Only Admin or ProjectManager can delete tasks ***
+            // Only Admin or ProjectManager can delete tasks
             if (userRole != "Admin" && userRole != "ProjectManager")
                 return Forbid("You don't have permission to delete this task.");
 
@@ -446,6 +462,39 @@ namespace syncroAPI.Controllers
                     Email = user.Email
                 }
             };
+
+            // --- Handle Mentions in Comments ---
+            // Find users mentioned in the comment (e.g., @username)
+            var mentionedUsernames = Regex.Matches(request.Content, @"@(\w+)")
+                                            .Cast<Match>()
+                                            .Select(m => m.Groups[1].Value)
+                                            .Distinct()
+                                            .ToList();
+
+            if (mentionedUsernames.Any())
+            {
+                var mentionedUsers = await _context.Users
+                    .Where(u => mentionedUsernames.Contains(u.Username))
+                    .ToListAsync();
+
+                foreach (var mentionedUser in mentionedUsers)
+                {
+                    // Ensure the mentioned user has access to the project
+                    var (mentionedUserHasAccess, _) = await HasProjectAccess(task.ProjectId, mentionedUser.Id);
+                    if (mentionedUserHasAccess)
+                    {
+                        var mentionNotification = new Notification
+                        {
+                            UserId = mentionedUser.Id,
+                            Message = $"{user.Username} mentioned you in a comment on task: \"{task.Title}\"",
+                            RelatedTaskId = task.Id,
+                            TriggeredByUserId = userId
+                        };
+                        _context.Notifications.Add(mentionNotification);
+                    }
+                }
+                await _context.SaveChangesAsync(); // Save mention notifications
+            }
 
             return Ok(response);
         }
