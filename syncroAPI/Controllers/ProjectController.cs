@@ -32,14 +32,22 @@ namespace syncroAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectSummaryResponse>>> GetProjects()
+        public async Task<ActionResult<IEnumerable<ProjectSummaryResponse>>> GetProjects([FromQuery] bool includeArchived = false)
         {
             var userId = GetCurrentUserId();
 
-            var projects = await _context.ProjectMembers
+            var query = _context.ProjectMembers
                 .Where(pm => pm.UserId == userId && pm.IsActive)
                 .Include(pm => pm.Project)
                     .ThenInclude(p => p.Tasks)
+                .AsQueryable(); // Use AsQueryable to allow further filtering
+
+            if (!includeArchived)
+            {
+                query = query.Where(pm => !pm.Project.IsArchived);
+            }
+
+            var projects = await query
                 .Select(pm => new ProjectSummaryResponse
                 {
                     Id = pm.Project.Id,
@@ -250,6 +258,70 @@ namespace syncroAPI.Controllers
             return Ok(response);
         }
 
+        [HttpPut("{id}/archive")]
+        public async Task<IActionResult> ArchiveProject(int id)
+        {
+            var userId = GetCurrentUserId();
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
+            {
+                return NotFound("Project not found.");
+            }
+
+            // Check if the current user is the project creator or an Admin/ProjectManager
+            var membership = await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
+
+            if (project.CreatedByUserId != userId && (membership == null || (membership.Role != "Admin" && membership.Role != "ProjectManager")))
+            {
+                return Forbid("You do not have permission to archive this project.");
+            }
+
+            if (project.IsArchived)
+            {
+                return BadRequest("Project is already archived.");
+            }
+
+            project.IsArchived = true;
+            project.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return NoContent(); // 204 No Content
+        }
+
+        [HttpPut("{id}/unarchive")]
+        public async Task<IActionResult> UnarchiveProject(int id)
+        {
+            var userId = GetCurrentUserId();
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
+            {
+                return NotFound("Project not found.");
+            }
+
+            // Check if the current user is the project creator or an Admin/ProjectManager
+            var membership = await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId && pm.IsActive);
+
+            if (project.CreatedByUserId != userId && (membership == null || (membership.Role != "Admin" && membership.Role != "ProjectManager")))
+            {
+                return Forbid("You do not have permission to unarchive this project.");
+            }
+
+            if (!project.IsArchived)
+            {
+                return BadRequest("Project is not archived.");
+            }
+
+            project.IsArchived = false;
+            project.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return NoContent(); // 204 No Content
+        }
+        
         [HttpGet("search-users")]
         public async Task<ActionResult<IEnumerable<UserSearchResponse>>> SearchUsers([FromQuery] string q)
         {
