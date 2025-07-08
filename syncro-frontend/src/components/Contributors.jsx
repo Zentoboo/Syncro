@@ -5,6 +5,16 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useBreadcrumb } from '../contexts/BreadcrumbContext';
 
+import { Pie } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    ArcElement,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
+
 const Contributors = () => {
     const { projectId } = useParams();
     const { user } = useAuth();
@@ -14,10 +24,7 @@ const Contributors = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    console.log('Contributors component loaded, projectId:', projectId);
-
     const fetchData = useCallback(async () => {
-        console.log('Fetching data for project:', projectId);
         setLoading(true);
         setError('');
         try {
@@ -25,12 +32,8 @@ const Contributors = () => {
                 axios.get(`/api/project/${projectId}`),
                 axios.get(`/api/dashboard/project/${projectId}`)
             ]);
-            console.log('Project data:', projectRes.data);
-            console.log('Dashboard data:', dashboardRes.data);
             setProject(projectRes.data);
             setContributors(dashboardRes.data.tasksByMember || []);
-            
-            // Update breadcrumb context with project name
             updateProjectInfo(projectId, projectRes.data.name);
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -88,6 +91,34 @@ const Contributors = () => {
         );
     }
 
+    // Aggregate data for pie chart
+    const totalTodo = contributors.reduce((sum, m) => sum + m.todoTasks, 0);
+    const totalInProgress = contributors.reduce((sum, m) => sum + m.inProgressTasks, 0);
+    const totalCompleted = contributors.reduce((sum, m) => sum + m.completedTasks, 0);
+
+    const pieData = {
+        labels: ['To Do', 'In Progress', 'Completed'],
+        datasets: [
+            {
+                data: [totalTodo, totalInProgress, totalCompleted],
+                backgroundColor: ['#94a3b8', '#38bdf8', '#4ade80'],
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const pieOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: 'white'
+                }
+            }
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-900 text-white">
             <header className="bg-slate-800 shadow-lg">
@@ -109,10 +140,18 @@ const Contributors = () => {
                 </div>
             </header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
+                {/* Pie Chart Section */}
+                <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
+                    <h2 className="text-xl font-semibold text-white mb-4">Task Distribution</h2>
+                    <div className="max-w-sm mx-auto">
+                        <Pie data={pieData} options={pieOptions} />
+                    </div>
+                </div>
+
+                {/* Contributors Grid */}
                 <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
                     <h2 className="text-xl font-semibold text-white mb-4">Contributors ({contributors.length})</h2>
-                    
                     {contributors.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="text-slate-500 text-lg mb-2">No contributors found</div>
@@ -131,7 +170,6 @@ const Contributors = () => {
                                             <p className="text-sm text-slate-400">{member.user.email}</p>
                                         </div>
                                     </div>
-                                    
                                     <div className="mt-4">
                                         <div className="flex justify-between text-sm">
                                             <span>Tasks: {member.completedTasks}/{member.totalTasks}</span>
@@ -140,13 +178,10 @@ const Contributors = () => {
                                         <div className="w-full bg-slate-600 rounded-full h-2 mt-1">
                                             <div 
                                                 className="bg-green-500 h-2 rounded-full" 
-                                                style={{ 
-                                                    width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` 
-                                                }}
+                                                style={{ width: `${member.totalTasks > 0 ? (member.completedTasks / member.totalTasks) * 100 : 0}%` }}
                                             ></div>
                                         </div>
                                     </div>
-                                    
                                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                                         <div className="text-center p-2 bg-indigo-900/50 rounded">
                                             <div className="font-medium text-indigo-300">{member.inProgressTasks}</div>
