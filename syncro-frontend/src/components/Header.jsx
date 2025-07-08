@@ -1,20 +1,17 @@
-// src/components/Header.jsx - Enhanced with comprehensive notifications
+// src/components/Header.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { AdminOnly } from './RBACComponents';
 import axios from 'axios';
 
-const Header = ({ 
-    activeTab, 
-    setActiveTab, 
-    showUserManagement = false 
-}) => {
+const Header = ({ showUserManagement = false }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Triangle Icon Component
+    const isActive = (path) => location.pathname === path;
+
     const TriangleIcon = () => (
         <svg className="h-8 w-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6.42,21,17.58,12,6.42,3Z" />
@@ -122,8 +119,8 @@ const Header = ({
 
         return (
             <div className="relative">
-                <button 
-                    onClick={() => setIsOpen(!isOpen)} 
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
                     className="relative p-2 rounded-full hover:bg-slate-700 transition-colors"
                 >
                     <svg className="h-7 w-7 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,7 +158,7 @@ const Header = ({
                                         <div className="flex items-start space-x-3">
                                             {/* Notification Icon */}
                                             {getNotificationIcon(n.message)}
-                                            
+
                                             <div className="flex-1 min-w-0">
                                                 {/* Notification Category Badge */}
                                                 <div className="flex items-center justify-between mb-1">
@@ -172,12 +169,12 @@ const Header = ({
                                                         <div className="w-2 h-2 bg-indigo-400 rounded-full flex-shrink-0"></div>
                                                     )}
                                                 </div>
-                                                
+
                                                 {/* Notification Message */}
                                                 <p className="text-sm text-gray-200 leading-snug mb-2">
                                                     {n.message}
                                                 </p>
-                                                
+
                                                 {/* Notification Footer */}
                                                 <div className="flex items-center justify-between text-xs text-gray-400">
                                                     <span className="flex items-center">
@@ -193,7 +190,7 @@ const Header = ({
                                                         {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
-                                                
+
                                                 {/* Click to view indicator */}
                                                 {n.relatedTaskId && (
                                                     <div className="mt-2 text-xs text-indigo-400 flex items-center">
@@ -238,10 +235,6 @@ const Header = ({
         );
     };
 
-    // Determine if we're on specific pages
-    const isOnDashboard = location.pathname === '/dashboard';
-    const isOnAbout = location.pathname === '/about';
-
     return (
         <header className="bg-slate-800 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -252,80 +245,53 @@ const Header = ({
                             <h1 className="text-3xl font-bold text-white">Syncro</h1>
                         </div>
                         <nav className="flex space-x-4">
-                            {/* Dashboard Navigation */}
-                            {isOnDashboard ? (
-                                <>
-                                    <button 
-                                        onClick={() => setActiveTab('dashboard')} 
-                                        className={`px-4 py-2 rounded-md text-base font-medium ${
-                                            activeTab === 'dashboard' 
-                                                ? 'bg-indigo-600 text-white' 
-                                                : 'text-gray-300 hover:bg-slate-700 hover:text-white'
-                                        } transition-colors`}
-                                    >
-                                        Dashboard
-                                    </button>
-                                    {showUserManagement && (
-                                        <AdminOnly>
-                                            <button 
-                                                onClick={() => setActiveTab('users')} 
-                                                className={`px-4 py-2 rounded-md text-base font-medium ${
-                                                    activeTab === 'users' 
-                                                        ? 'bg-indigo-600 text-white' 
-                                                        : 'text-gray-300 hover:bg-slate-700 hover:text-white'
-                                                } transition-colors`}
-                                            >
-                                                User Management
-                                            </button>
-                                        </AdminOnly>
-                                    )}
-                                </>
-                            ) : (
-                                /* Other pages navigation */
-                                <>
-                                    <Link 
-                                        to="/dashboard"
-                                        className={`px-4 py-2 rounded-md text-base font-medium ${
-                                            isOnDashboard
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'text-gray-300 hover:bg-slate-700 hover:text-white'
-                                        } transition-colors`}
-                                    >
-                                        Dashboard
-                                    </Link>
-                                </>
-                            )}
+                            <Link
+                                to="/dashboard"
+                                className={`px-4 py-2 rounded-md text-base font-medium ${isActive('/dashboard')
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-gray-300 hover:bg-slate-700 hover:text-white'
+                                    } transition-colors`}
+                            >
+                                Dashboard
+                            </Link>
 
-                            {/* About Navigation */}
-                            {isOnAbout ? (
-                                <span className="px-4 py-2 rounded-md text-base font-medium bg-indigo-600 text-white">
-                                    About
-                                </span>
-                            ) : (
-                                <Link 
-                                    to="/about"
-                                    className="px-4 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            <AdminOnly>
+                                <Link
+                                    to="/user-management"
+                                    className={`px-4 py-2 rounded-md text-base font-medium ${isActive('/user-management')
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-gray-300 hover:bg-slate-700 hover:text-white'
+                                        } transition-colors`}
                                 >
-                                    About
+                                    User Management
                                 </Link>
-                            )}
+                            </AdminOnly>
+
+                            <Link
+                                to="/about"
+                                className={`px-4 py-2 rounded-md text-base font-medium ${isActive('/about')
+                                    ? 'bg-indigo-600 text-white'
+                                    : 'text-gray-300 hover:bg-slate-700 hover:text-white'
+                                    } transition-colors`}
+                            >
+                                About
+                            </Link>
                         </nav>
                     </div>
-                    
+
                     <div className="flex items-center space-x-5">
-                        {/* Enhanced Notification Bell - now always visible */}
                         <NotificationBell />
-                        
                         <span className="text-base text-gray-300">Welcome, {user?.username}</span>
-                        <span className={`font-medium px-3 py-1 rounded-full text-sm ${
-                            user?.role === 'Admin' ? 'bg-red-200 text-red-800' :
-                            user?.role === 'ProjectManager' ? 'bg-indigo-200 text-indigo-800' :
-                                'bg-green-200 text-green-800'
-                        }`}>
+                        <span className={`font-medium px-3 py-1 rounded-full text-sm ${user?.role === 'Admin'
+                            ? 'bg-red-200 text-red-800'
+                            : user?.role === 'ProjectManager'
+                                ? 'bg-indigo-200 text-indigo-800'
+                                : 'bg-green-200 text-green-800'
+                            }`}>
                             {user?.role}
                         </span>
-                        <button 
-                            onClick={logout} 
+                        <button
+                            onClick={logout}
                             className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 transition-colors"
                         >
                             Logout

@@ -265,3 +265,5 @@ The application is designed to be deployed on:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **Built with ❤️ using ASP.NET Core and React**
+
+Server=tcp:syncro-sqlserver123.database.windows.net,1433;Initial Catalog=syncrodb;Persist Security Info=False;User ID=sqladmin;Password=ZXCvbnm123456;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
