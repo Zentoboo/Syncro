@@ -78,7 +78,7 @@ const ProjectMembersModal = ({ isOpen, onClose, project, onMemberUpdate }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+        <div className="fixed inset-0 bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
             <div className="bg-slate-800 text-gray-100 p-8 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-700">
                 <h2 className="text-3xl font-bold mb-6">Manage Project Members</h2>
                 <RoleBasedComponent allowedRoles={['Admin', 'ProjectManager']} userRoleInProject={userRoleInProject}>
@@ -180,41 +180,51 @@ const ArchiveProjectModal = ({ isOpen, onClose, project, onArchiveSuccess }) => 
     const [loading, setLoading] = useState(false);
     const [confirmText, setConfirmText] = useState('');
 
+    // This function now uses the correct endpoint and sends the required data.
     const handleArchive = async () => {
         if (confirmText.toLowerCase() !== 'archive') {
-            // Replaced alert with a console log or a custom message box if available
-            console.log('Please type "archive" to confirm');
+            alert('Please type "archive" to confirm');
             return;
         }
 
         try {
             setLoading(true);
-            await axios.put(`/api/project/${project.id}/archive`);
+            const updatePayload = {
+                name: project.name,
+                description: project.description,
+                isArchived: true, // Set the archive flag
+            };
+            // Use the main update endpoint
+            await axios.put(`/api/project/${project.id}`, updatePayload);
             onArchiveSuccess();
             onClose();
-            // Replaced alert with a console log or a custom message box if available
-            console.log(`Project "${project.name}" has been archived successfully`);
+            alert(`Project "${project.name}" has been archived successfully`);
         } catch (error) {
             console.error('Error archiving project:', error);
-            // Replaced alert with a console log or a custom message box if available
-            console.log(error.response?.data || 'Failed to archive project');
+            alert(error.response?.data?.message || 'Failed to archive project');
         } finally {
             setLoading(false);
+            setConfirmText(''); // Reset confirmation text
         }
     };
 
+    // This function is also updated to use the correct endpoint.
     const handleUnarchive = async () => {
         try {
             setLoading(true);
-            await axios.put(`/api/project/${project.id}/unarchive`);
+            const updatePayload = {
+                name: project.name,
+                description: project.description,
+                isArchived: false, // Unset the archive flag
+            };
+            // Use the main update endpoint
+            await axios.put(`/api/project/${project.id}`, updatePayload);
             onArchiveSuccess();
             onClose();
-            // Replaced alert with a console log or a custom message box if available
-            console.log(`Project "${project.name}" has been unarchived successfully`);
+            alert(`Project "${project.name}" has been unarchived successfully`);
         } catch (error) {
             console.error('Error unarchiving project:', error);
-            // Replaced alert with a console log or a custom message box if available
-            console.log(error.response?.data || 'Failed to unarchive project');
+            alert(error.response?.data?.message || 'Failed to unarchive project');
         } finally {
             setLoading(false);
         }
@@ -223,7 +233,7 @@ const ArchiveProjectModal = ({ isOpen, onClose, project, onArchiveSuccess }) => 
     if (!isOpen || !project) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+        <div className="fixed inset-0 bg-opacity-60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
             <div className="bg-slate-800 text-gray-100 p-8 rounded-xl shadow-2xl w-full max-w-lg border border-slate-700">
                 {project.isArchived ? (
                     // Unarchive Modal
